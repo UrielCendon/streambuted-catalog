@@ -30,6 +30,19 @@ import { buildCatalogRouter } from "./interfaces/http/routes/CatalogRoutes";
 
 dotenv.config();
 
+const parseAllowedOrigins = (): string[] => {
+  const configuredOrigins = (process.env.CORS_ALLOWED_ORIGINS ?? "http://localhost:5173")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter((origin) => origin.length > 0);
+
+  if (configuredOrigins.length === 0 || configuredOrigins.includes("*")) {
+    throw new Error("Invalid CORS_ALLOWED_ORIGINS: define explicit origins and avoid wildcard '*'.");
+  }
+
+  return configuredOrigins;
+};
+
 export interface ApplicationContext {
   app: Express;
   identityPromotionConsumer: IdentityPromotionConsumer;
@@ -37,6 +50,8 @@ export interface ApplicationContext {
 
 export const createApplication = (): ApplicationContext => {
   const jwtSecret = process.env.JWT_SECRET;
+  const allowedOrigins = parseAllowedOrigins();
+
   if (!jwtSecret || jwtSecret.trim().length === 0) {
     throw new Error("Missing required environment variable: JWT_SECRET");
   }
@@ -87,7 +102,10 @@ export const createApplication = (): ApplicationContext => {
 
   const app = express();
   app.use(helmet());
-  app.use(cors());
+  app.use(cors({
+    origin: allowedOrigins,
+    credentials: true
+  }));
   app.use(express.json({ limit: "1mb" }));
   app.use(morgan("combined"));
 

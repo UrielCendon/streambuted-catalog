@@ -26,6 +26,8 @@ Microservicio de catálogo musical para **artistas, álbumes y pistas** en Strea
 ## Integración con Identity Service
 
 - Validación JWT con `JWT_SECRET` y algoritmo obligatorio `HS512`.
+- El `accessToken` se envía en `Authorization: Bearer <token>`.
+- El `refresh_token` viaja como cookie HttpOnly, por lo que el frontend debe usar `withCredentials: true` al consumir endpoints de autenticación en Identity.
 - Consumer RabbitMQ:
   - **Exchange:** `identity.events`
   - **Routing key:** `user.promoted`
@@ -33,6 +35,28 @@ Microservicio de catálogo musical para **artistas, álbumes y pistas** en Strea
 - Al recibir `user.promoted`, se crea/actualiza automáticamente un artista local con:
   - `artist_id = userId`
   - `display_name = username` (fallback a email/local-part)
+
+### Guía rápida Frontend (`withCredentials: true`)
+
+```ts
+const loginResponse = await axios.post(
+  "/api/v1/auth/login",
+  { email, password },
+  { withCredentials: true }
+);
+
+const { accessToken } = loginResponse.data;
+
+await axios.get("/api/v1/catalog/search", {
+  headers: { Authorization: `Bearer ${accessToken}` }
+});
+
+await axios.post(
+  "/api/v1/auth/refresh",
+  {},
+  { withCredentials: true }
+);
+```
 
 ## Variables de entorno
 
