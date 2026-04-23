@@ -1,0 +1,60 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum CatalogStatus {
+  PUBLICADO
+  RETIRADO
+}
+
+model Artist {
+  artistId    String   @id @default(uuid()) @db.Uuid @map("artist_id")
+  displayName String   @map("display_name")
+  biography   String?
+  albums      Album[]
+  tracks      Track[]
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("artist")
+}
+
+model Album {
+  albumId       String        @id @default(uuid()) @db.Uuid @map("album_id")
+  artistId      String        @db.Uuid @map("artist_id")
+  artist        Artist        @relation(fields: [artistId], references: [artistId], onDelete: Restrict, onUpdate: Cascade)
+  title         String
+  coverAssetId  String        @db.Uuid @map("cover_asset_id")
+  status        CatalogStatus @default(PUBLICADO)
+  tracks        Track[]
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  @@index([artistId], map: "idx_album_artist_id")
+  @@index([status], map: "idx_album_status")
+  @@map("album")
+}
+
+model Track {
+  trackId       String        @id @default(uuid()) @db.Uuid @map("track_id")
+  artistId      String        @db.Uuid @map("artist_id")
+  artist        Artist        @relation(fields: [artistId], references: [artistId], onDelete: Restrict, onUpdate: Cascade)
+  albumId       String?       @db.Uuid @map("album_id")
+  album         Album?        @relation(fields: [albumId], references: [albumId], onDelete: SetNull, onUpdate: Cascade)
+  title         String
+  audioAssetId  String        @db.Uuid @map("audio_asset_id")
+  coverAssetId  String        @db.Uuid @map("cover_asset_id")
+  status        CatalogStatus @default(PUBLICADO)
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  @@index([artistId], map: "idx_track_artist_id")
+  @@index([albumId], map: "idx_track_album_id")
+  @@index([status], map: "idx_track_status")
+  @@map("track")
+}

@@ -1,0 +1,53 @@
+{
+  "name": "catalog-service",
+  "version": "1.0.0",
+  "description": "StreamButed Catalog Service",
+  "main": "dist/main.js",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/main.js",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:deploy": "prisma migrate deploy",
+    "test": "jest --runInBand",
+    "test:watch": "jest --watch"
+  },
+  "keywords": [
+    "streambuted",
+    "catalog",
+    "microservice",
+    "express",
+    "typescript"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.7.0",
+    "amqplib": "^0.10.5",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^4.21.2",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.0",
+    "zod": "^3.24.4"
+  },
+  "devDependencies": {
+    "@types/amqplib": "^0.10.7",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^4.17.21",
+    "@types/jest": "^29.5.14",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/morgan": "^1.9.9",
+    "@types/node": "^22.15.17",
+    "jest": "^29.7.0",
+    "prisma": "^6.7.0",
+    "ts-jest": "^29.3.3",
+    "tsx": "^4.20.0",
+    "typescript": "^5.8.3"
+  }
+}
