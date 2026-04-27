@@ -60,16 +60,30 @@ await axios.post(
 
 ## Variables de entorno
 
-1. Copia `.env.example` a `.env`.
-2. Reemplaza todos los valores `CHANGE_ME_*` antes de ejecutar el servicio.
+1. Configura las variables en el `.env` unificado de la raíz (`StreamButed/.env`).
+2. Reemplaza todos los valores `CHANGE_ME_*` antes de ejecutar con Docker Compose.
 3. Asegura que `JWT_SECRET` tenga al menos 64 caracteres para `HS512`.
 
 ```bash
 PORT=8082
-DATABASE_URL=postgresql://streambuted:CHANGE_ME_DB_PASSWORD@localhost:5432/streambuted_catalog?schema=public
+DATABASE_URL=postgresql://streambuted:CHANGE_ME_DB_PASSWORD@postgres:5432/streambuted_identity?schema=public
 JWT_SECRET=CHANGE_ME_WITH_AT_LEAST_64_CHARACTERS_FOR_HS512_SIGNING_KEY
-RABBITMQ_URL=amqp://streambuted:CHANGE_ME_RABBITMQ_PASSWORD@localhost:5672
+RABBITMQ_URL=amqp://streambuted:CHANGE_ME_RABBITMQ_PASSWORD@rabbitmq:5672
 RABBITMQ_USER_PROMOTED_QUEUE=catalog.user.promoted
+```
+
+## Orquestación recomendada (Compose maestro)
+
+Desde la raíz del repositorio:
+
+```bash
+docker compose up -d --build
+```
+
+Para detener todo el ecosistema:
+
+```bash
+docker compose down
 ```
 
 ## Modelo de datos (Prisma)
@@ -159,9 +173,10 @@ Incluye pruebas unitarias de valor para:
 ## Docker
 
 ```bash
-docker build -t streambuted-catalog-service .
-docker run --env-file .env -p 8082:8082 streambuted-catalog-service
+docker compose up -d --build
 ```
+
+Ejecuta ese comando desde la raíz del monorepo para levantar infraestructura y servicios juntos.
 
 ---
 
