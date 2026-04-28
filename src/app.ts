@@ -102,6 +102,19 @@ export const createApplication = (): ApplicationContext => {
 
   const app = express();
   app.use(helmet());
+  app.use(
+    helmet.contentSecurityPolicy({
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", ...allowedOrigins],
+        connectSrc: ["'self'", ...allowedOrigins],
+        imgSrc: ["'self'", 'data:' ],
+        styleSrc: ["'self'", 'https:'],
+        objectSrc: ["'none'"],
+        frameAncestors: ["'none'"]
+      }
+    })
+  );
   app.use(cors({
     origin: allowedOrigins,
     credentials: true

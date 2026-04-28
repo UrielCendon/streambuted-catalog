@@ -1,4 +1,5 @@
 import amqplib, { Channel, ChannelModel, ConsumeMessage } from "amqplib";
+import crypto from "crypto";
 import { z } from "zod";
 import { HandleUserPromotedUseCase } from "../../application/useCases/artists/HandleUserPromotedUseCase";
 
@@ -104,6 +105,21 @@ export class IdentityPromotionConsumer {
     }
 
     try {
+      const signingSecret = process.env.EVENT_SIGNING_SECRET;
+      if (signingSecret && signingSecret.trim().length > 0) {
+        const signatureHeader = message.properties?.headers?.["X-Event-Signature"] as string | undefined;
+        const payloadString = message.content.toString();
+        const expected = crypto.createHmac("sha256", signingSecret).update(payloadString, "utf8").digest("base64");
+        const a = Buffer.from(expected, "utf8");
+        const b = Buffer.from(String(signatureHeader ?? ""), "utf8");
+        const valid = a.length === b.length && crypto.timingSafeEqual(a, b);
+        if (!valid) {
+          console.warn("Rejected message due to invalid signature.");
+          this.channel.nack(message, false, false);
+          return;
+        }
+      }
+
       const payload = JSON.parse(message.content.toString()) as unknown;
       const parsedEvent = userPromotedEventSchema.parse(unwrapPayload(payload));
       const event = {
