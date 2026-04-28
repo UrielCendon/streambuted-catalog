@@ -42,12 +42,21 @@ export class IdentityPromotionConsumer {
   private isConnecting = false;
   private isRecovering = false;
   private isStopped = false;
+  private readonly signingSecret: string;
 
   constructor(
     private readonly rabbitMqUrl: string,
     private readonly queueName: string,
     private readonly handleUserPromotedUseCase: HandleUserPromotedUseCase
-  ) {}
+  ) {
+    this.signingSecret = process.env.EVENT_SIGNING_SECRET ?? "";
+    if (!this.signingSecret || this.signingSecret.trim().length === 0) {
+      throw new Error(
+        "EVENT_SIGNING_SECRET must be configured and non-empty. " +
+        "This environment variable is required for event signature verification."
+      );
+    }
+  }
 
   public async start(): Promise<void> {
     if (this.isConnecting || (this.connection && this.channel)) {
@@ -105,19 +114,17 @@ export class IdentityPromotionConsumer {
     }
 
     try {
-      const signingSecret = process.env.EVENT_SIGNING_SECRET;
-      if (signingSecret && signingSecret.trim().length > 0) {
-        const signatureHeader = message.properties?.headers?.["X-Event-Signature"] as string | undefined;
-        const payloadString = message.content.toString();
-        const expected = crypto.createHmac("sha256", signingSecret).update(payloadString, "utf8").digest("base64");
-        const a = Buffer.from(expected, "utf8");
-        const b = Buffer.from(String(signatureHeader ?? ""), "utf8");
-        const valid = a.length === b.length && crypto.timingSafeEqual(a, b);
-        if (!valid) {
-          console.warn("Rejected message due to invalid signature.");
-          this.channel.nack(message, false, false);
-          return;
-        }
+      // Always verify: constructor guarantees signingSecret is non-empty
+      const signatureHeader = message.properties?.headers?.["X-Event-Signature"] as string | undefined;
+      const payloadString = message.content.toString();
+      const expected = crypto.createHmac("sha256", this.signingSecret).update(payloadString, "utf8").digest("base64");
+      const a = Buffer.from(expected, "utf8");
+      const b = Buffer.from(String(signatureHeader ?? ""), "utf8");
+      const valid = a.length === b.length && crypto.timingSafeEqual(a, b);
+      if (!valid) {
+        console.warn("Rejected message due to invalid signature. Possible tampering or misconfigured publisher.");
+        this.channel.nack(message, false, false);
+        return;
       }
 
       const payload = JSON.parse(message.content.toString()) as unknown;
