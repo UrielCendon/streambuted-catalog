@@ -9,7 +9,7 @@ const userPromotedEventSchema = z.object({
   username: z.string().optional(),
   previousRole: z.string().optional(),
   newRole: z.string().optional(),
-  promotedAt: z.string().optional()
+  promotedAt: z.union([z.string(), z.number()]).optional()
 });
 
 const unwrapPayload = (messagePayload: unknown): unknown => {
@@ -105,7 +105,12 @@ export class IdentityPromotionConsumer {
 
     try {
       const payload = JSON.parse(message.content.toString()) as unknown;
-      const event = userPromotedEventSchema.parse(unwrapPayload(payload));
+      const parsedEvent = userPromotedEventSchema.parse(unwrapPayload(payload));
+      const event = {
+        ...parsedEvent,
+        promotedAt:
+          parsedEvent.promotedAt === undefined ? undefined : String(parsedEvent.promotedAt)
+      };
       await this.handleUserPromotedUseCase.execute(event);
       this.channel.ack(message);
     } catch (error) {
