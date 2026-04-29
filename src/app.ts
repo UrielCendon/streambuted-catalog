@@ -49,15 +49,13 @@ export interface ApplicationContext {
 }
 
 export const createApplication = (): ApplicationContext => {
-  const jwtSecret = process.env.JWT_SECRET;
+  const jwksUrl = process.env.JWT_JWKS_URL;
+  const jwtIssuer = process.env.JWT_ISSUER ?? "http://identity-service:8081";
+  const jwtAudience = process.env.JWT_AUDIENCE;
   const allowedOrigins = parseAllowedOrigins();
 
-  if (!jwtSecret || jwtSecret.trim().length === 0) {
-    throw new Error("Missing required environment variable: JWT_SECRET");
-  }
-
-  if (jwtSecret.trim().length < 64) {
-    throw new Error("Invalid JWT_SECRET: HS512 requires at least 64 characters.");
+  if (!jwksUrl || jwksUrl.trim().length === 0) {
+    throw new Error("Missing required environment variable: JWT_JWKS_URL");
   }
 
   const artistRepository = new PrismaArtistRepository(prismaClient);
@@ -130,7 +128,11 @@ export const createApplication = (): ApplicationContext => {
     response.status(200).json({ status: "ok" });
   });
 
-  const authenticationMiddleware = createAuthenticationMiddleware(jwtSecret);
+  const authenticationMiddleware = createAuthenticationMiddleware({
+    jwksUrl,
+    issuer: jwtIssuer,
+    audience: jwtAudience
+  });
   const catalogRouter = buildCatalogRouter(catalogController, authenticationMiddleware);
   app.use("/catalog", catalogRouter);
   app.use("/api/v1/catalog", catalogRouter);

@@ -13,7 +13,7 @@ Microservicio de catálogo musical para **artistas, álbumes y pistas** en Strea
 | Validación | Zod |
 | Mensajería | RabbitMQ (`amqplib`) |
 | Pruebas unitarias | Jest |
-| Seguridad JWT | HMAC-SHA512 (**HS512**) |
+| Seguridad JWT | Validación local vía **JWKS** (RS256) |
 
 ## Reglas de negocio implementadas
 
@@ -25,7 +25,9 @@ Microservicio de catálogo musical para **artistas, álbumes y pistas** en Strea
 
 ## Integración con Identity Service
 
-- Validación JWT con `JWT_SECRET` y algoritmo obligatorio `HS512`.
+- Validación del access token **localmente** usando JWKS publicado por Identity: `GET /api/v1/auth/.well-known/jwks.json`.
+- Algoritmo esperado: `RS256`.
+- El JWKS se cachea en memoria (sin llamada síncrona por cada request).
 - El `accessToken` se envía en `Authorization: Bearer <token>`.
 - El `refresh_token` viaja como cookie HttpOnly, por lo que el frontend debe usar `withCredentials: true` al consumir endpoints de autenticación en Identity.
 - Consumer RabbitMQ:
@@ -62,12 +64,14 @@ await axios.post(
 
 1. Configura las variables en el `.env` unificado de la raíz (`StreamButed/.env`).
 2. Reemplaza todos los valores `CHANGE_ME_*` antes de ejecutar con Docker Compose.
-3. Asegura que `JWT_SECRET` tenga al menos 64 caracteres para `HS512`.
+3. Configura `JWT_JWKS_URL` (y opcionalmente `JWT_ISSUER`/`JWT_AUDIENCE`) para validar tokens.
 
 ```bash
 PORT=8082
 DATABASE_URL=postgresql://streambuted:CHANGE_ME_DB_PASSWORD@catalog-postgres:5432/streambuted_catalog?schema=public
-JWT_SECRET=CHANGE_ME_WITH_AT_LEAST_64_CHARACTERS_FOR_HS512_SIGNING_KEY
+JWT_JWKS_URL=http://identity-service:8081/api/v1/auth/.well-known/jwks.json
+JWT_ISSUER=http://identity-service:8081
+JWT_AUDIENCE=
 RABBITMQ_URL=amqp://streambuted:CHANGE_ME_RABBITMQ_PASSWORD@rabbitmq:5672
 RABBITMQ_USER_PROMOTED_QUEUE=catalog.user.promoted
 ```
