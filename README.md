@@ -66,7 +66,7 @@ await axios.post(
 
 ```bash
 PORT=8082
-DATABASE_URL=postgresql://streambuted:CHANGE_ME_DB_PASSWORD@postgres:5432/streambuted_identity?schema=public
+DATABASE_URL=postgresql://streambuted:CHANGE_ME_DB_PASSWORD@catalog-postgres:5432/streambuted_catalog?schema=public
 JWT_SECRET=CHANGE_ME_WITH_AT_LEAST_64_CHARACTERS_FOR_HS512_SIGNING_KEY
 RABBITMQ_URL=amqp://streambuted:CHANGE_ME_RABBITMQ_PASSWORD@rabbitmq:5672
 RABBITMQ_USER_PROMOTED_QUEUE=catalog.user.promoted
