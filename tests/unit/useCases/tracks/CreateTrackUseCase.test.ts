@@ -1,4 +1,8 @@
 import { AuthorizationService } from "../../../../src/application/services/AuthorizationService";
+import {
+  MediaAssetMetadata,
+  MediaAssetValidator
+} from "../../../../src/application/services/MediaAssetValidator";
 import { CreateTrackUseCase } from "../../../../src/application/useCases/tracks/CreateTrackUseCase";
 import { CatalogStatus } from "../../../../src/domain/enums/CatalogStatus";
 import { AlbumRepository } from "../../../../src/domain/repositories/AlbumRepository";
@@ -6,7 +10,7 @@ import { ArtistRepository } from "../../../../src/domain/repositories/ArtistRepo
 import { TrackRepository } from "../../../../src/domain/repositories/TrackRepository";
 
 describe("CreateTrackUseCase", () => {
-  const buildUseCase = () => {
+  const buildUseCase = (mediaAssetValidator?: MediaAssetValidator) => {
     const trackRepository: jest.Mocked<TrackRepository> = {
       create: jest.fn(),
       findById: jest.fn(),
@@ -38,7 +42,8 @@ describe("CreateTrackUseCase", () => {
       trackRepository,
       artistRepository,
       albumRepository,
-      new AuthorizationService()
+      new AuthorizationService(),
+      mediaAssetValidator
     );
 
     return {
@@ -79,6 +84,135 @@ describe("CreateTrackUseCase", () => {
 
     expect(result.status).toBe(CatalogStatus.Publicado);
     expect(trackRepository.create).toHaveBeenCalledTimes(1);
+  });
+
+  it("validates audio and cover assets before creating a track", async () => {
+    const mediaAssetValidator: jest.Mocked<MediaAssetValidator> = {
+      getMetadata: jest.fn(
+        async (assetId: string, _authorizationHeader: string): Promise<MediaAssetMetadata> => ({
+          assetId,
+          assetType:
+            assetId === "173d3f1d-9ddb-44e6-af70-779d8bfa9c45"
+              ? "AUDIO"
+              : "TRACK_COVER",
+          ownerUserId: "8dbf424d-c519-4b2a-8018-2992a5f3f0fd",
+          contentType: "audio/mpeg",
+          sizeBytes: 42,
+          exists: true
+        })
+      )
+    };
+    const { useCase, trackRepository, artistRepository } = buildUseCase(mediaAssetValidator);
+    artistRepository.existsById.mockResolvedValue(true);
+    trackRepository.create.mockResolvedValue({
+      trackId: "9be6e47a-e796-44fd-83cd-53f2f7ff9155",
+      artistId: "8dbf424d-c519-4b2a-8018-2992a5f3f0fd",
+      albumId: null,
+      title: "Test Track",
+      audioAssetId: "173d3f1d-9ddb-44e6-af70-779d8bfa9c45",
+      coverAssetId: "688f6a27-a86a-4f8c-af24-2ec6a13eafca",
+      status: CatalogStatus.Publicado,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+
+    await useCase.execute(
+      {
+        artistId: "8dbf424d-c519-4b2a-8018-2992a5f3f0fd",
+        title: "Test Track",
+        audioAssetId: "173d3f1d-9ddb-44e6-af70-779d8bfa9c45",
+        coverAssetId: "688f6a27-a86a-4f8c-af24-2ec6a13eafca"
+      },
+      {
+        subject: "8dbf424d-c519-4b2a-8018-2992a5f3f0fd",
+        role: "ARTIST",
+        authorizationHeader: "Bearer token"
+      }
+    );
+
+    expect(mediaAssetValidator.getMetadata).toHaveBeenNthCalledWith(
+      1,
+      "173d3f1d-9ddb-44e6-af70-779d8bfa9c45",
+      "Bearer token"
+    );
+    expect(mediaAssetValidator.getMetadata).toHaveBeenNthCalledWith(
+      2,
+      "688f6a27-a86a-4f8c-af24-2ec6a13eafca",
+      "Bearer token"
+    );
+    expect(trackRepository.create).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects a track when the audio asset has the wrong type", async () => {
+    const mediaAssetValidator: MediaAssetValidator = {
+      getMetadata: async (assetId: string) => ({
+        assetId,
+        assetType: "TRACK_COVER",
+        ownerUserId: "8dbf424d-c519-4b2a-8018-2992a5f3f0fd",
+        contentType: "image/png",
+        sizeBytes: 42,
+        exists: true
+      })
+    };
+    const { useCase, trackRepository, artistRepository } = buildUseCase(mediaAssetValidator);
+    artistRepository.existsById.mockResolvedValue(true);
+
+    await expect(
+      useCase.execute(
+        {
+          artistId: "8dbf424d-c519-4b2a-8018-2992a5f3f0fd",
+          title: "Test Track",
+          audioAssetId: "173d3f1d-9ddb-44e6-af70-779d8bfa9c45",
+          coverAssetId: "688f6a27-a86a-4f8c-af24-2ec6a13eafca"
+        },
+        {
+          subject: "8dbf424d-c519-4b2a-8018-2992a5f3f0fd",
+          role: "ARTIST",
+          authorizationHeader: "Bearer token"
+        }
+      )
+    ).rejects.toMatchObject({
+      statusCode: 400,
+      code: "ValidationError"
+    });
+
+    expect(trackRepository.create).not.toHaveBeenCalled();
+  });
+
+  it("rejects a track when the asset belongs to another user", async () => {
+    const mediaAssetValidator: MediaAssetValidator = {
+      getMetadata: async (assetId: string) => ({
+        assetId,
+        assetType: "AUDIO",
+        ownerUserId: "d3d87e12-3fd0-4d3f-af1e-77330831257b",
+        contentType: "audio/mpeg",
+        sizeBytes: 42,
+        exists: true
+      })
+    };
+    const { useCase, trackRepository, artistRepository } = buildUseCase(mediaAssetValidator);
+    artistRepository.existsById.mockResolvedValue(true);
+
+    await expect(
+      useCase.execute(
+        {
+          artistId: "8dbf424d-c519-4b2a-8018-2992a5f3f0fd",
+          title: "Test Track",
+          audioAssetId: "173d3f1d-9ddb-44e6-af70-779d8bfa9c45",
+          coverAssetId: "688f6a27-a86a-4f8c-af24-2ec6a13eafca"
+        },
+        {
+          subject: "8dbf424d-c519-4b2a-8018-2992a5f3f0fd",
+          role: "ARTIST",
+          authorizationHeader: "Bearer token"
+        }
+      )
+    ).rejects.toMatchObject({
+      statusCode: 403,
+      code: "Forbidden"
+    });
+
+    expect(trackRepository.create).not.toHaveBeenCalled();
   });
 
   it("throws forbidden when the requester role is not ARTIST", async () => {

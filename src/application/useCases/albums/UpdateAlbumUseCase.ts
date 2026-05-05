@@ -1,13 +1,18 @@
 import { AuthenticatedUser } from "../../auth/AuthenticatedUser";
 import { AppError } from "../../errors/AppError";
 import { AuthorizationService } from "../../services/AuthorizationService";
+import {
+  assertMediaAssetMatches,
+  MediaAssetValidator
+} from "../../services/MediaAssetValidator";
 import { Album } from "../../../domain/entities/Album";
 import { AlbumRepository, UpdateAlbumInput } from "../../../domain/repositories/AlbumRepository";
 
 export class UpdateAlbumUseCase {
   constructor(
     private readonly albumRepository: AlbumRepository,
-    private readonly authorizationService: AuthorizationService
+    private readonly authorizationService: AuthorizationService,
+    private readonly mediaAssetValidator?: MediaAssetValidator
   ) {}
 
   public async execute(albumId: string, input: UpdateAlbumInput, user: AuthenticatedUser): Promise<Album> {
@@ -20,6 +25,16 @@ export class UpdateAlbumUseCase {
 
     if (!input.title && !input.coverAssetId) {
       throw new AppError(400, "ValidationError", "At least one album field must be provided.");
+    }
+
+    if (input.coverAssetId) {
+      await assertMediaAssetMatches(
+        this.mediaAssetValidator,
+        input.coverAssetId,
+        "ALBUM_COVER",
+        user.subject,
+        user.authorizationHeader
+      );
     }
 
     return this.albumRepository.update(albumId, input);

@@ -1,6 +1,10 @@
 import { AuthenticatedUser } from "../../auth/AuthenticatedUser";
 import { AppError } from "../../errors/AppError";
 import { AuthorizationService } from "../../services/AuthorizationService";
+import {
+  assertMediaAssetMatches,
+  MediaAssetValidator
+} from "../../services/MediaAssetValidator";
 import { Track } from "../../../domain/entities/Track";
 import { CatalogStatus } from "../../../domain/enums/CatalogStatus";
 import { AlbumRepository } from "../../../domain/repositories/AlbumRepository";
@@ -20,7 +24,8 @@ export class CreateTrackUseCase {
     private readonly trackRepository: TrackRepository,
     private readonly artistRepository: ArtistRepository,
     private readonly albumRepository: AlbumRepository,
-    private readonly authorizationService: AuthorizationService
+    private readonly authorizationService: AuthorizationService,
+    private readonly mediaAssetValidator?: MediaAssetValidator
   ) {}
 
   public async execute(command: CreateTrackCommand, user: AuthenticatedUser): Promise<Track> {
@@ -41,6 +46,21 @@ export class CreateTrackUseCase {
         throw new AppError(400, "ValidationError", "The album does not belong to the specified artist.");
       }
     }
+
+    await assertMediaAssetMatches(
+      this.mediaAssetValidator,
+      command.audioAssetId,
+      "AUDIO",
+      user.subject,
+      user.authorizationHeader
+    );
+    await assertMediaAssetMatches(
+      this.mediaAssetValidator,
+      command.coverAssetId,
+      "TRACK_COVER",
+      user.subject,
+      user.authorizationHeader
+    );
 
     return this.trackRepository.create({
       artistId: command.artistId,

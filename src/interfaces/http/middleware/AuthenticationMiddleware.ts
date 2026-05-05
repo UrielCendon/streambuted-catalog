@@ -126,7 +126,8 @@ export const createAuthenticationMiddleware =
 
           request.authenticatedUser = {
             subject: decoded.sub.trim(),
-            role: normalizedRole
+            role: normalizedRole,
+            authorizationHeader: request.headers.authorization
           };
 
           next();

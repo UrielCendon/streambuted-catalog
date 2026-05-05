@@ -60,7 +60,8 @@ describe("AuthenticationMiddleware", () => {
     expect(next.mock.calls[0]).toEqual([]);
     expect(request.authenticatedUser).toEqual({
       subject: "9d0c95ba-5fa2-43ee-a8dd-49a151ed36cb",
-      role: "ARTIST"
+      role: "ARTIST",
+      authorizationHeader: `bearer ${token}`
     });
   });
 

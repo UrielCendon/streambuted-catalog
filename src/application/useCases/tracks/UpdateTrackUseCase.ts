@@ -1,6 +1,10 @@
 import { AuthenticatedUser } from "../../auth/AuthenticatedUser";
 import { AppError } from "../../errors/AppError";
 import { AuthorizationService } from "../../services/AuthorizationService";
+import {
+  assertMediaAssetMatches,
+  MediaAssetValidator
+} from "../../services/MediaAssetValidator";
 import { Track } from "../../../domain/entities/Track";
 import { AlbumRepository } from "../../../domain/repositories/AlbumRepository";
 import { TrackRepository, UpdateTrackInput } from "../../../domain/repositories/TrackRepository";
@@ -9,7 +13,8 @@ export class UpdateTrackUseCase {
   constructor(
     private readonly trackRepository: TrackRepository,
     private readonly albumRepository: AlbumRepository,
-    private readonly authorizationService: AuthorizationService
+    private readonly authorizationService: AuthorizationService,
+    private readonly mediaAssetValidator?: MediaAssetValidator
   ) {}
 
   public async execute(trackId: string, input: UpdateTrackInput, user: AuthenticatedUser): Promise<Track> {
@@ -38,6 +43,26 @@ export class UpdateTrackUseCase {
       if (album.artistId !== track.artistId) {
         throw new AppError(400, "ValidationError", "The album does not belong to the track artist.");
       }
+    }
+
+    if (input.audioAssetId) {
+      await assertMediaAssetMatches(
+        this.mediaAssetValidator,
+        input.audioAssetId,
+        "AUDIO",
+        user.subject,
+        user.authorizationHeader
+      );
+    }
+
+    if (input.coverAssetId) {
+      await assertMediaAssetMatches(
+        this.mediaAssetValidator,
+        input.coverAssetId,
+        "TRACK_COVER",
+        user.subject,
+        user.authorizationHeader
+      );
     }
 
     return this.trackRepository.update(trackId, input);

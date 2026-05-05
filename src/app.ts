@@ -19,6 +19,7 @@ import { ListArtistTracksUseCase } from "./application/useCases/tracks/ListArtis
 import { RetireTrackUseCase } from "./application/useCases/tracks/RetireTrackUseCase";
 import { UpdateTrackUseCase } from "./application/useCases/tracks/UpdateTrackUseCase";
 import { IdentityPromotionConsumer } from "./infrastructure/messaging/IdentityPromotionConsumer";
+import { GrpcMediaAssetClient } from "./infrastructure/grpc/GrpcMediaAssetClient";
 import { prismaClient } from "./infrastructure/prisma/prismaClient";
 import { PrismaAlbumRepository } from "./infrastructure/repositories/PrismaAlbumRepository";
 import { PrismaArtistRepository } from "./infrastructure/repositories/PrismaArtistRepository";
@@ -61,18 +62,44 @@ export const createApplication = (): ApplicationContext => {
   const artistRepository = new PrismaArtistRepository(prismaClient);
   const albumRepository = new PrismaAlbumRepository(prismaClient);
   const trackRepository = new PrismaTrackRepository(prismaClient);
+  const mediaAssetValidator = new GrpcMediaAssetClient(
+    process.env.MEDIA_GRPC_TARGET ?? "media-service:9093",
+    {
+      timeoutMs: Number(process.env.MEDIA_GRPC_TIMEOUT_MS ?? 2000)
+    }
+  );
 
   const authorizationService = new AuthorizationService();
 
-  const createAlbumUseCase = new CreateAlbumUseCase(albumRepository, artistRepository, authorizationService);
+  const createAlbumUseCase = new CreateAlbumUseCase(
+    albumRepository,
+    artistRepository,
+    authorizationService,
+    mediaAssetValidator
+  );
   const getAlbumByIdUseCase = new GetAlbumByIdUseCase(albumRepository);
-  const updateAlbumUseCase = new UpdateAlbumUseCase(albumRepository, authorizationService);
+  const updateAlbumUseCase = new UpdateAlbumUseCase(
+    albumRepository,
+    authorizationService,
+    mediaAssetValidator
+  );
   const retireAlbumUseCase = new RetireAlbumUseCase(albumRepository, authorizationService);
   const listArtistAlbumsUseCase = new ListArtistAlbumsUseCase(albumRepository);
 
-  const createTrackUseCase = new CreateTrackUseCase(trackRepository, artistRepository, albumRepository, authorizationService);
+  const createTrackUseCase = new CreateTrackUseCase(
+    trackRepository,
+    artistRepository,
+    albumRepository,
+    authorizationService,
+    mediaAssetValidator
+  );
   const getTrackByIdUseCase = new GetTrackByIdUseCase(trackRepository);
-  const updateTrackUseCase = new UpdateTrackUseCase(trackRepository, albumRepository, authorizationService);
+  const updateTrackUseCase = new UpdateTrackUseCase(
+    trackRepository,
+    albumRepository,
+    authorizationService,
+    mediaAssetValidator
+  );
   const retireTrackUseCase = new RetireTrackUseCase(trackRepository, authorizationService);
   const listArtistTracksUseCase = new ListArtistTracksUseCase(trackRepository);
 
