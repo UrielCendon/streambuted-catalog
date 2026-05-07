@@ -12,6 +12,25 @@ describe("AuthenticationMiddleware", () => {
   const issuer = "http://identity-service-test";
   const kid = "test-kid";
 
+  const runMiddleware = async (authorization: string) => {
+    const middleware = createAuthenticationMiddleware({ jwksUrl, issuer });
+    const request = {
+      headers: {
+        authorization
+      }
+    } as Request;
+
+    const next = jest.fn();
+    await new Promise<void>((resolve) => {
+      middleware(request, {} as Response, (...args: unknown[]) => {
+        next(...args);
+        resolve();
+      });
+    });
+
+    return { request, next };
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -86,21 +105,7 @@ describe("AuthenticationMiddleware", () => {
       expiresIn: "15m"
     });
 
-    const middleware = createAuthenticationMiddleware({ jwksUrl, issuer });
-    const request = {
-      headers: {
-        authorization: `Bearer ${token}`
-      }
-    } as Request;
-
-    const next = jest.fn();
-    await new Promise<void>((resolve) => {
-      const captureNext = jest.fn((...args: unknown[]) => {
-        next(...args);
-        resolve();
-      });
-      middleware(request, {} as Response, captureNext);
-    });
+    const { next } = await runMiddleware(`Bearer ${token}`);
 
     expect(next).toHaveBeenCalledTimes(1);
 
@@ -108,5 +113,128 @@ describe("AuthenticationMiddleware", () => {
     expect(error).toBeInstanceOf(AppError);
     expect((error as AppError).statusCode).toBe(401);
     expect((error as AppError).code).toBe("Unauthorized");
+  });
+
+  it("returns 401 when JWT header is missing kid", async () => {
+    const { publicKey, privateKey } = generateKeyPairSync("rsa", {
+      modulusLength: 2048,
+      publicKeyEncoding: { type: "spki", format: "pem" },
+      privateKeyEncoding: { type: "pkcs8", format: "pem" }
+    });
+
+    (jwksRsa as unknown as jest.Mock).mockReturnValue({
+      getSigningKey: (_requestedKid: string, callback: (err: Error | null, key?: { getPublicKey: () => string }) => void) => {
+        callback(null, { getPublicKey: () => publicKey });
+      }
+    });
+
+    const token = jwt.sign({ role: "artist" }, privateKey, {
+      algorithm: "RS256",
+      subject: "9d0c95ba-5fa2-43ee-a8dd-49a151ed36cb",
+      issuer,
+      expiresIn: "15m"
+    });
+
+    const { next } = await runMiddleware(`Bearer ${token}`);
+
+    const [error] = next.mock.calls[0];
+    expect(error).toBeInstanceOf(AppError);
+    expect((error as AppError).statusCode).toBe(401);
+  });
+
+  it("returns 409 only when signing key is not found for kid", async () => {
+    const { privateKey } = generateKeyPairSync("rsa", {
+      modulusLength: 2048,
+      publicKeyEncoding: { type: "spki", format: "pem" },
+      privateKeyEncoding: { type: "pkcs8", format: "pem" }
+    });
+
+    (jwksRsa as unknown as jest.Mock).mockReturnValue({
+      getSigningKey: (_requestedKid: string, callback: (err: Error | null, key?: { getPublicKey: () => string }) => void) => {
+        const error = new Error("Unable to find a signing key");
+        (error as { name?: string }).name = "SigningKeyNotFoundError";
+        callback(error);
+      }
+    });
+
+    const token = jwt.sign({ role: "artist" }, privateKey, {
+      algorithm: "RS256",
+      subject: "9d0c95ba-5fa2-43ee-a8dd-49a151ed36cb",
+      issuer,
+      keyid: kid,
+      expiresIn: "15m"
+    });
+
+    const { next } = await runMiddleware(`Bearer ${token}`);
+
+    const [error] = next.mock.calls[0];
+    expect(error).toBeInstanceOf(AppError);
+    expect((error as AppError).statusCode).toBe(409);
+    expect((error as AppError).code).toBe("Conflict");
+  });
+
+  it("returns 503 when JWKS client fails", async () => {
+    const { privateKey } = generateKeyPairSync("rsa", {
+      modulusLength: 2048,
+      publicKeyEncoding: { type: "spki", format: "pem" },
+      privateKeyEncoding: { type: "pkcs8", format: "pem" }
+    });
+
+    (jwksRsa as unknown as jest.Mock).mockReturnValue({
+      getSigningKey: (_requestedKid: string, callback: (err: Error | null, key?: { getPublicKey: () => string }) => void) => {
+        const error = new Error("JWKS endpoint unavailable");
+        (error as { name?: string }).name = "JwksError";
+        callback(error);
+      }
+    });
+
+    const token = jwt.sign({ role: "artist" }, privateKey, {
+      algorithm: "RS256",
+      subject: "9d0c95ba-5fa2-43ee-a8dd-49a151ed36cb",
+      issuer,
+      keyid: kid,
+      expiresIn: "15m"
+    });
+
+    const { next } = await runMiddleware(`Bearer ${token}`);
+
+    const [error] = next.mock.calls[0];
+    expect(error).toBeInstanceOf(AppError);
+    expect((error as AppError).statusCode).toBe(503);
+    expect((error as AppError).code).toBe("ServiceUnavailable");
+  });
+
+  it("returns 401 for invalid signature (not a signing-key mismatch)", async () => {
+    const { privateKey: tokenPrivateKey } = generateKeyPairSync("rsa", {
+      modulusLength: 2048,
+      publicKeyEncoding: { type: "spki", format: "pem" },
+      privateKeyEncoding: { type: "pkcs8", format: "pem" }
+    });
+
+    const { publicKey: wrongPublicKey } = generateKeyPairSync("rsa", {
+      modulusLength: 2048,
+      publicKeyEncoding: { type: "spki", format: "pem" },
+      privateKeyEncoding: { type: "pkcs8", format: "pem" }
+    });
+
+    (jwksRsa as unknown as jest.Mock).mockReturnValue({
+      getSigningKey: (_requestedKid: string, callback: (err: Error | null, key?: { getPublicKey: () => string }) => void) => {
+        callback(null, { getPublicKey: () => wrongPublicKey });
+      }
+    });
+
+    const token = jwt.sign({ role: "artist" }, tokenPrivateKey, {
+      algorithm: "RS256",
+      subject: "9d0c95ba-5fa2-43ee-a8dd-49a151ed36cb",
+      issuer,
+      keyid: kid,
+      expiresIn: "15m"
+    });
+
+    const { next } = await runMiddleware(`Bearer ${token}`);
+
+    const [error] = next.mock.calls[0];
+    expect(error).toBeInstanceOf(AppError);
+    expect((error as AppError).statusCode).toBe(401);
   });
 });
