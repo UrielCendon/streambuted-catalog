@@ -53,6 +53,7 @@ describe("SearchCatalogUseCase", () => {
           artistId: "e0341908-4f89-4cb4-aa7a-63ea1294f08b",
           albumId: "332f5690-e5ab-4d4a-8f9b-db9eb49e25d9",
           title: "Midnight Signals",
+          genre: "Electronica",
           audioAssetId: "d63f4e03-8f01-4f79-8da4-2faf3a9eb20f",
           coverAssetId: "13fa6760-b0b2-40a8-a590-4622f7613656",
           status: CatalogStatus.Publicado,

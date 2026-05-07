@@ -5,6 +5,7 @@ export interface Track {
   artistId: string;
   albumId: string | null;
   title: string;
+  genre: string;
   audioAssetId: string;
   coverAssetId: string;
   status: CatalogStatus;

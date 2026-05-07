@@ -21,7 +21,7 @@ Microservicio de catálogo musical para **artistas, álbumes y pistas** en Strea
 2. Para operaciones de escritura, el `artist_id` efectivo se deriva del `sub` del JWT.
 3. El retiro de pistas/álbumes es lógico (`status = RETIRADO`), sin borrado físico.
 4. `/catalog/search` solo devuelve contenido publicado (`PUBLICADO`) para álbumes y pistas.
-5. `audio_asset_id` y `cover_asset_id` se persisten como UUIDs sin validación externa contra Media Service.
+5. `audio_asset_id`, `track.cover_asset_id` y `album.cover_asset_id` se validan contra Media Service por gRPC interno antes de persistirse.
 
 ## Integración con Identity Service
 
@@ -37,6 +37,15 @@ Microservicio de catálogo musical para **artistas, álbumes y pistas** en Strea
 - Al recibir `user.promoted`, se crea/actualiza automáticamente un artista local con:
   - `artist_id = userId`
   - `display_name = username` (fallback a email/local-part)
+
+## Integración con Media Service
+
+- Catalog usa `MediaAssetService.GetAssetMetadata` por gRPC interno.
+- El destino se configura con `MEDIA_GRPC_TARGET` (`media-service:9093` en Docker).
+- Catalog propaga el header `Authorization` original como metadata gRPC.
+- Media autoriza la metadata si el asset pertenece al `sub` autenticado o si el usuario es `ADMIN`.
+- Para crear/actualizar pistas se requiere un asset `AUDIO` y una imagen `TRACK_COVER`.
+- Para crear/actualizar álbumes se requiere una imagen `ALBUM_COVER`.
 
 ### Guía rápida Frontend (`withCredentials: true`)
 
@@ -108,6 +117,7 @@ docker compose down
   - `artist_id` (FK)
   - `album_id` (FK nullable)
   - `title`
+  - `genre`
   - `audio_asset_id` (UUID)
   - `cover_asset_id` (UUID)
   - `status` (`PUBLICADO` / `RETIRADO`)
@@ -149,6 +159,9 @@ Endpoints operativos:
 Notas de contrato:
 - En `POST /catalog/albums` y `POST /catalog/tracks` no se debe enviar `artistId` en el body.
 - El backend usa `request.authenticatedUser.subject` como fuente de verdad para el artista autenticado.
+- `genre` es obligatorio al crear pistas con `POST /catalog/tracks` y `POST /catalog/albums/:albumId/tracks`.
+- `PATCH /catalog/tracks/:trackId` permite cambiar `title`, `genre` y `albumId`; enviar `albumId: null` deja la pista como single.
+- La busqueda de pistas publicadas considera `title` y `genre`.
 
 ## Ejecución local
 

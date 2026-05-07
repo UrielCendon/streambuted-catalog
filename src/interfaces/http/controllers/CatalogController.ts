@@ -137,6 +137,7 @@ export class CatalogController {
           artistId: authenticatedUser.subject,
           albumId: request.body.albumId ?? request.body.album_id,
           title: request.body.title,
+          genre: request.body.genre ?? request.body.genero,
           audioAssetId: request.body.audioAssetId ?? request.body.audio_asset_id,
           coverAssetId: request.body.coverAssetId ?? request.body.cover_asset_id
         },
@@ -160,6 +161,7 @@ export class CatalogController {
           artistId: authenticatedUser.subject,
           albumId: request.params.albumId,
           title: request.body.title,
+          genre: request.body.genre ?? request.body.genero,
           audioAssetId: request.body.audioAssetId ?? request.body.audio_asset_id,
           coverAssetId: request.body.coverAssetId ?? request.body.cover_asset_id
         },
@@ -183,6 +185,7 @@ export class CatalogController {
         {
           albumId: request.body.albumId ?? request.body.album_id,
           title: request.body.title,
+          genre: request.body.genre ?? request.body.genero,
           audioAssetId: request.body.audioAssetId ?? request.body.audio_asset_id,
           coverAssetId: request.body.coverAssetId ?? request.body.cover_asset_id
         },

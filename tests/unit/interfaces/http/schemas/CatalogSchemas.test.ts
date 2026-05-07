@@ -31,6 +31,7 @@ describe("CatalogSchemas", () => {
       body: {
         album_id: "b5d52ff9-2e9c-4cbe-910a-2e5b30c7eaeb",
         title: "My Track",
+        genero: "Rock",
         audioAssetId: "6dd6f07f-fc96-4f9b-ab08-8444f8519758",
         coverAssetId: "f4a4bde9-f5be-414e-bb37-6c546c08231f"
       }
@@ -41,6 +42,7 @@ describe("CatalogSchemas", () => {
       expect(result.data.body).toEqual({
         albumId: "b5d52ff9-2e9c-4cbe-910a-2e5b30c7eaeb",
         title: "My Track",
+        genre: "Rock",
         audioAssetId: "6dd6f07f-fc96-4f9b-ab08-8444f8519758",
         coverAssetId: "f4a4bde9-f5be-414e-bb37-6c546c08231f"
       });
@@ -55,6 +57,7 @@ describe("CatalogSchemas", () => {
       query: {},
       body: {
         title: "Inside Album",
+        genre: "Electronica",
         audio_asset_id: "6dd6f07f-fc96-4f9b-ab08-8444f8519758",
         cover_asset_id: "f4a4bde9-f5be-414e-bb37-6c546c08231f"
       }
@@ -65,6 +68,7 @@ describe("CatalogSchemas", () => {
       expect(result.data.params.albumId).toBe("b5d52ff9-2e9c-4cbe-910a-2e5b30c7eaeb");
       expect(result.data.body).toEqual({
         title: "Inside Album",
+        genre: "Electronica",
         audioAssetId: "6dd6f07f-fc96-4f9b-ab08-8444f8519758",
         coverAssetId: "f4a4bde9-f5be-414e-bb37-6c546c08231f"
       });

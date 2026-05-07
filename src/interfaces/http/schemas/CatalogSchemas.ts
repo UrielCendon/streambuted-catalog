@@ -1,12 +1,16 @@
 import { z } from "zod";
 
 const uuidSchema = z.string().uuid();
+const genreSchema = z.string().trim().min(1).max(80);
 
 const hasAtLeastOneField = (value: Record<string, unknown>, fieldNames: string[]): boolean =>
   fieldNames.some((fieldName) => value[fieldName] !== undefined);
 
 const hasAtLeastOneAlias = (value: Record<string, unknown>, aliases: [string, string]): boolean =>
   value[aliases[0]] !== undefined || value[aliases[1]] !== undefined;
+
+const hasAtLeastOneOf = (value: Record<string, unknown>, fieldNames: string[]): boolean =>
+  fieldNames.some((fieldName) => value[fieldName] !== undefined);
 
 const createArtistProfileBodySchema = z
   .object({
@@ -55,6 +59,8 @@ const createTrackBodySchema = z
     albumId: uuidSchema.nullable().optional(),
     album_id: uuidSchema.nullable().optional(),
     title: z.string().trim().min(1).max(220),
+    genre: genreSchema.optional(),
+    genero: genreSchema.optional(),
     audioAssetId: uuidSchema.optional(),
     audio_asset_id: uuidSchema.optional(),
     coverAssetId: uuidSchema.optional(),
@@ -62,6 +68,9 @@ const createTrackBodySchema = z
   })
   .refine((value) => hasAtLeastOneAlias(value, ["audioAssetId", "audio_asset_id"]), {
     message: "audioAssetId or audio_asset_id is required."
+  })
+  .refine((value) => hasAtLeastOneOf(value, ["genre", "genero"]), {
+    message: "genre or genero is required."
   })
   .refine((value) => hasAtLeastOneAlias(value, ["coverAssetId", "cover_asset_id"]), {
     message: "coverAssetId or cover_asset_id is required."
@@ -69,6 +78,7 @@ const createTrackBodySchema = z
   .transform((value) => ({
     albumId: value.albumId ?? value.album_id,
     title: value.title,
+    genre: value.genre ?? value.genero,
     audioAssetId: value.audioAssetId ?? value.audio_asset_id,
     coverAssetId: value.coverAssetId ?? value.cover_asset_id
   }));
@@ -76,6 +86,8 @@ const createTrackBodySchema = z
 const createTrackInAlbumBodySchema = z
   .object({
     title: z.string().trim().min(1).max(220),
+    genre: genreSchema.optional(),
+    genero: genreSchema.optional(),
     audioAssetId: uuidSchema.optional(),
     audio_asset_id: uuidSchema.optional(),
     coverAssetId: uuidSchema.optional(),
@@ -84,11 +96,15 @@ const createTrackInAlbumBodySchema = z
   .refine((value) => hasAtLeastOneAlias(value, ["audioAssetId", "audio_asset_id"]), {
     message: "audioAssetId or audio_asset_id is required."
   })
+  .refine((value) => hasAtLeastOneOf(value, ["genre", "genero"]), {
+    message: "genre or genero is required."
+  })
   .refine((value) => hasAtLeastOneAlias(value, ["coverAssetId", "cover_asset_id"]), {
     message: "coverAssetId or cover_asset_id is required."
   })
   .transform((value) => ({
     title: value.title,
+    genre: value.genre ?? value.genero,
     audioAssetId: value.audioAssetId ?? value.audio_asset_id,
     coverAssetId: value.coverAssetId ?? value.cover_asset_id
   }));
@@ -98,6 +114,8 @@ const updateTrackBodySchema = z
     albumId: uuidSchema.nullable().optional(),
     album_id: uuidSchema.nullable().optional(),
     title: z.string().trim().min(1).max(220).optional(),
+    genre: genreSchema.optional(),
+    genero: genreSchema.optional(),
     audioAssetId: uuidSchema.optional(),
     audio_asset_id: uuidSchema.optional(),
     coverAssetId: uuidSchema.optional(),
@@ -106,10 +124,11 @@ const updateTrackBodySchema = z
   .transform((value) => ({
     albumId: value.albumId ?? value.album_id,
     title: value.title,
+    genre: value.genre ?? value.genero,
     audioAssetId: value.audioAssetId ?? value.audio_asset_id,
     coverAssetId: value.coverAssetId ?? value.cover_asset_id
   }))
-  .refine((value) => hasAtLeastOneField(value, ["albumId", "title", "audioAssetId", "coverAssetId"]), {
+  .refine((value) => hasAtLeastOneField(value, ["albumId", "title", "genre", "audioAssetId", "coverAssetId"]), {
     message: "At least one track field must be provided."
   });
 

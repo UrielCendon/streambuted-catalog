@@ -62,6 +62,7 @@ describe("CreateTrackUseCase", () => {
       artistId: "8dbf424d-c519-4b2a-8018-2992a5f3f0fd",
       albumId: null,
       title: "Test Track",
+      genre: "Rock",
       audioAssetId: "173d3f1d-9ddb-44e6-af70-779d8bfa9c45",
       coverAssetId: "688f6a27-a86a-4f8c-af24-2ec6a13eafca",
       status: CatalogStatus.Publicado,
@@ -73,6 +74,7 @@ describe("CreateTrackUseCase", () => {
       {
         artistId: "8dbf424d-c519-4b2a-8018-2992a5f3f0fd",
         title: "Test Track",
+        genre: "Rock",
         audioAssetId: "173d3f1d-9ddb-44e6-af70-779d8bfa9c45",
         coverAssetId: "688f6a27-a86a-4f8c-af24-2ec6a13eafca"
       },
@@ -109,6 +111,7 @@ describe("CreateTrackUseCase", () => {
       artistId: "8dbf424d-c519-4b2a-8018-2992a5f3f0fd",
       albumId: null,
       title: "Test Track",
+      genre: "Rock",
       audioAssetId: "173d3f1d-9ddb-44e6-af70-779d8bfa9c45",
       coverAssetId: "688f6a27-a86a-4f8c-af24-2ec6a13eafca",
       status: CatalogStatus.Publicado,
@@ -120,6 +123,7 @@ describe("CreateTrackUseCase", () => {
       {
         artistId: "8dbf424d-c519-4b2a-8018-2992a5f3f0fd",
         title: "Test Track",
+        genre: "Rock",
         audioAssetId: "173d3f1d-9ddb-44e6-af70-779d8bfa9c45",
         coverAssetId: "688f6a27-a86a-4f8c-af24-2ec6a13eafca"
       },
@@ -162,6 +166,7 @@ describe("CreateTrackUseCase", () => {
         {
           artistId: "8dbf424d-c519-4b2a-8018-2992a5f3f0fd",
           title: "Test Track",
+          genre: "Rock",
           audioAssetId: "173d3f1d-9ddb-44e6-af70-779d8bfa9c45",
           coverAssetId: "688f6a27-a86a-4f8c-af24-2ec6a13eafca"
         },
@@ -198,6 +203,7 @@ describe("CreateTrackUseCase", () => {
         {
           artistId: "8dbf424d-c519-4b2a-8018-2992a5f3f0fd",
           title: "Test Track",
+          genre: "Rock",
           audioAssetId: "173d3f1d-9ddb-44e6-af70-779d8bfa9c45",
           coverAssetId: "688f6a27-a86a-4f8c-af24-2ec6a13eafca"
         },
@@ -223,6 +229,7 @@ describe("CreateTrackUseCase", () => {
         {
           artistId: "8dbf424d-c519-4b2a-8018-2992a5f3f0fd",
           title: "Test Track",
+          genre: "Rock",
           audioAssetId: "173d3f1d-9ddb-44e6-af70-779d8bfa9c45",
           coverAssetId: "688f6a27-a86a-4f8c-af24-2ec6a13eafca"
         },
@@ -244,6 +251,7 @@ describe("CreateTrackUseCase", () => {
         {
           artistId: "8dbf424d-c519-4b2a-8018-2992a5f3f0fd",
           title: "Test Track",
+          genre: "Rock",
           audioAssetId: "173d3f1d-9ddb-44e6-af70-779d8bfa9c45",
           coverAssetId: "688f6a27-a86a-4f8c-af24-2ec6a13eafca"
         },

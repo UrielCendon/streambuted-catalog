@@ -6,6 +6,7 @@ export interface CreateTrackInput {
   artistId: string;
   albumId?: string | null;
   title: string;
+  genre: string;
   audioAssetId: string;
   coverAssetId: string;
   status?: CatalogStatus;
@@ -14,6 +15,7 @@ export interface CreateTrackInput {
 export interface UpdateTrackInput {
   albumId?: string | null;
   title?: string;
+  genre?: string;
   audioAssetId?: string;
   coverAssetId?: string;
 }

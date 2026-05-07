@@ -47,6 +47,7 @@ model Track {
   albumId       String?       @db.Uuid @map("album_id")
   album         Album?        @relation(fields: [albumId], references: [albumId], onDelete: SetNull, onUpdate: Cascade)
   title         String
+  genre         String        @default("Sin genero")
   audioAssetId  String        @db.Uuid @map("audio_asset_id")
   coverAssetId  String        @db.Uuid @map("cover_asset_id")
   status        CatalogStatus @default(PUBLICADO)

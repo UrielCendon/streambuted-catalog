@@ -19,6 +19,7 @@ const mapTrack = (track: {
   artistId: string;
   albumId: string | null;
   title: string;
+  genre: string;
   audioAssetId: string;
   coverAssetId: string;
   status: PrismaCatalogStatus;
@@ -29,6 +30,7 @@ const mapTrack = (track: {
   artistId: track.artistId,
   albumId: track.albumId,
   title: track.title,
+  genre: track.genre,
   audioAssetId: track.audioAssetId,
   coverAssetId: track.coverAssetId,
   status: toDomainStatus(track.status),
@@ -45,6 +47,7 @@ export class PrismaTrackRepository implements TrackRepository {
         artistId: input.artistId,
         albumId: input.albumId ?? null,
         title: input.title,
+        genre: input.genre,
         audioAssetId: input.audioAssetId,
         coverAssetId: input.coverAssetId,
         status: toPrismaStatus(input.status ?? CatalogStatus.Publicado)
@@ -68,6 +71,7 @@ export class PrismaTrackRepository implements TrackRepository {
       data: {
         albumId: input.albumId,
         title: input.title,
+        genre: input.genre,
         audioAssetId: input.audioAssetId,
         coverAssetId: input.coverAssetId
       }
@@ -91,10 +95,20 @@ export class PrismaTrackRepository implements TrackRepository {
     const tracks = await this.prisma.track.findMany({
       where: {
         status: PRISMA_STATUS_PUBLICADO,
-        title: {
-          contains: query,
-          mode: "insensitive"
-        }
+        OR: [
+          {
+            title: {
+              contains: query,
+              mode: "insensitive"
+            }
+          },
+          {
+            genre: {
+              contains: query,
+              mode: "insensitive"
+            }
+          }
+        ]
       },
       orderBy: {
         title: "asc"

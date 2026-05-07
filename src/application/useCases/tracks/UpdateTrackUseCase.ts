@@ -27,6 +27,7 @@ export class UpdateTrackUseCase {
 
     if (
       input.title === undefined &&
+      input.genre === undefined &&
       input.audioAssetId === undefined &&
       input.coverAssetId === undefined &&
       input.albumId === undefined

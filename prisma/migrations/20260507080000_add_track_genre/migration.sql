@@ -1,0 +1,2 @@
+ALTER TABLE "track"
+ADD COLUMN "genre" TEXT NOT NULL DEFAULT 'Sin genero';

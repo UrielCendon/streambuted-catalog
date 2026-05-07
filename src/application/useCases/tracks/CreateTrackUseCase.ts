@@ -15,6 +15,7 @@ export interface CreateTrackCommand {
   artistId: string;
   albumId?: string | null;
   title: string;
+  genre: string;
   audioAssetId: string;
   coverAssetId: string;
 }
@@ -66,6 +67,7 @@ export class CreateTrackUseCase {
       artistId: command.artistId,
       albumId: command.albumId ?? null,
       title: command.title,
+      genre: command.genre,
       audioAssetId: command.audioAssetId,
       coverAssetId: command.coverAssetId,
       status: CatalogStatus.Publicado
