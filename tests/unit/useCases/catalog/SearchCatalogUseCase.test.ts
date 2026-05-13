@@ -47,6 +47,7 @@ describe("SearchCatalogUseCase", () => {
       findById: jest.fn(),
       update: jest.fn(),
       retire: jest.fn(),
+      detachAlbum: jest.fn(),
       searchPublishedByTitle: jest.fn().mockResolvedValue([
         {
           trackId: "8ec8d920-a0f4-467d-ad47-53ecf694cbf4",
@@ -56,12 +57,14 @@ describe("SearchCatalogUseCase", () => {
           genre: "Electronica",
           audioAssetId: "d63f4e03-8f01-4f79-8da4-2faf3a9eb20f",
           coverAssetId: "13fa6760-b0b2-40a8-a590-4622f7613656",
+          durationSeconds: 185,
           status: CatalogStatus.Publicado,
           createdAt: new Date(),
           updatedAt: new Date()
         }
       ]),
-      listByArtist: jest.fn()
+      listByArtist: jest.fn(),
+      listPublishedByAlbum: jest.fn()
     };
 
     const useCase = new SearchCatalogUseCase(artistRepository, albumRepository, trackRepository);

@@ -18,6 +18,7 @@ export interface CreateTrackCommand {
   genre: string;
   audioAssetId: string;
   coverAssetId: string;
+  durationSeconds?: number | null;
 }
 
 export class CreateTrackUseCase {
@@ -48,7 +49,7 @@ export class CreateTrackUseCase {
       }
     }
 
-    await assertMediaAssetMatches(
+    const audioMetadata = await assertMediaAssetMatches(
       this.mediaAssetValidator,
       command.audioAssetId,
       "AUDIO",
@@ -70,6 +71,7 @@ export class CreateTrackUseCase {
       genre: command.genre,
       audioAssetId: command.audioAssetId,
       coverAssetId: command.coverAssetId,
+      durationSeconds: command.durationSeconds ?? audioMetadata?.durationSeconds ?? null,
       status: CatalogStatus.Publicado
     });
   }

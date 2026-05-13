@@ -5,17 +5,20 @@ export interface CreateArtistInput {
   artistId?: string;
   displayName: string;
   biography?: string | null;
+  profileImageAssetId?: string | null;
 }
 
 export interface UpsertPromotedArtistInput {
   artistId: string;
   displayName: string;
   biography?: string | null;
+  profileImageAssetId?: string | null;
 }
 
 export interface UpdateArtistInput {
   displayName?: string;
   biography?: string | null;
+  profileImageAssetId?: string | null;
 }
 
 export interface ArtistRepository {

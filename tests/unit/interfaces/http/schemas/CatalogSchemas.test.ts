@@ -1,7 +1,8 @@
 import {
   createAlbumSchema,
   createTrackInAlbumSchema,
-  createTrackSchema
+  createTrackSchema,
+  updateTrackSchema
 } from "../../../../../src/interfaces/http/schemas/CatalogSchemas";
 
 describe("CatalogSchemas", () => {
@@ -44,7 +45,8 @@ describe("CatalogSchemas", () => {
         title: "My Track",
         genre: "Rock",
         audioAssetId: "6dd6f07f-fc96-4f9b-ab08-8444f8519758",
-        coverAssetId: "f4a4bde9-f5be-414e-bb37-6c546c08231f"
+        coverAssetId: "f4a4bde9-f5be-414e-bb37-6c546c08231f",
+        durationSeconds: undefined
       });
     }
   });
@@ -70,7 +72,32 @@ describe("CatalogSchemas", () => {
         title: "Inside Album",
         genre: "Electronica",
         audioAssetId: "6dd6f07f-fc96-4f9b-ab08-8444f8519758",
-        coverAssetId: "f4a4bde9-f5be-414e-bb37-6c546c08231f"
+        coverAssetId: "f4a4bde9-f5be-414e-bb37-6c546c08231f",
+        durationSeconds: undefined
+      });
+    }
+  });
+
+  it("preserves null albumId when updating a track to single", () => {
+    const result = updateTrackSchema.safeParse({
+      params: {
+        trackId: "4f2c4561-f4a1-4ac6-ad45-7de0e7149a6f"
+      },
+      query: {},
+      body: {
+        albumId: null
+      }
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.body).toEqual({
+        albumId: null,
+        title: undefined,
+        genre: undefined,
+        audioAssetId: undefined,
+        coverAssetId: undefined,
+        durationSeconds: undefined
       });
     }
   });

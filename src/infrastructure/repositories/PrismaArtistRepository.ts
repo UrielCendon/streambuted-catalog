@@ -12,12 +12,14 @@ const mapArtist = (artist: {
   artistId: string;
   displayName: string;
   biography: string | null;
+  profileImageAssetId: string | null;
   createdAt: Date;
   updatedAt: Date;
 }): Artist => ({
   artistId: artist.artistId,
   displayName: artist.displayName,
   biography: artist.biography,
+  profileImageAssetId: artist.profileImageAssetId,
   createdAt: artist.createdAt,
   updatedAt: artist.updatedAt
 });
@@ -30,7 +32,8 @@ export class PrismaArtistRepository implements ArtistRepository {
       data: {
         ...(input.artistId ? { artistId: input.artistId } : {}),
         displayName: input.displayName,
-        biography: input.biography ?? null
+        biography: input.biography ?? null,
+        profileImageAssetId: input.profileImageAssetId ?? null
       }
     });
 
@@ -42,12 +45,14 @@ export class PrismaArtistRepository implements ArtistRepository {
       where: { artistId: input.artistId },
       update: {
         displayName: input.displayName,
-        biography: input.biography ?? null
+        biography: input.biography ?? null,
+        profileImageAssetId: input.profileImageAssetId ?? null
       },
       create: {
         artistId: input.artistId,
         displayName: input.displayName,
-        biography: input.biography ?? null
+        biography: input.biography ?? null,
+        profileImageAssetId: input.profileImageAssetId ?? null
       }
     });
 
@@ -67,7 +72,8 @@ export class PrismaArtistRepository implements ArtistRepository {
       where: { artistId },
       data: {
         displayName: input.displayName,
-        biography: input.biography
+        biography: input.biography,
+        profileImageAssetId: input.profileImageAssetId
       }
     });
 

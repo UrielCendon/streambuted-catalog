@@ -1,12 +1,19 @@
 import { createApplication } from "./app";
 import { prismaClient } from "./infrastructure/prisma/prismaClient";
+import {
+  startCatalogPlaybackGrpcServer,
+  stopCatalogPlaybackGrpcServer
+} from "./interfaces/grpc/CatalogPlaybackGrpcServer";
 
 const port = Number(process.env.PORT ?? 8082);
+const catalogGrpcPort = Number(process.env.CATALOG_GRPC_PORT ?? 9092);
 
 const bootstrap = async (): Promise<void> => {
-  const { app, identityPromotionConsumer } = createApplication();
+  const { app, identityPromotionConsumer, catalogPlaybackGrpcServer } = createApplication();
 
   void identityPromotionConsumer.start();
+  await startCatalogPlaybackGrpcServer(catalogPlaybackGrpcServer, catalogGrpcPort);
+  console.log(`Catalog Playback gRPC server running on port ${catalogGrpcPort}`);
 
   const server = app.listen(port, () => {
     console.log(`Catalog Service running on port ${port}`);
@@ -15,6 +22,7 @@ const bootstrap = async (): Promise<void> => {
   const shutdown = async (): Promise<void> => {
     console.log("Shutting down Catalog Service...");
     server.close(async () => {
+      await stopCatalogPlaybackGrpcServer(catalogPlaybackGrpcServer);
       await identityPromotionConsumer.stop();
       await prismaClient.$disconnect();
       process.exit(0);

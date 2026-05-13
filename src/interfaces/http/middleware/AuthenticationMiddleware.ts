@@ -78,7 +78,13 @@ const isSigningKeyNotFoundError = (error: unknown): boolean => {
   }
 
   // Keep this narrow: only treat explicit "kid not found" situations as conflict.
-  if (message.includes("unknown kid") || message.includes("no matching") || message.includes("signing key not found")) {
+  if (
+    message.includes("unknown kid") ||
+    message.includes("no matching") ||
+    message.includes("signing key not found") ||
+    message.includes("unable to find a signing key") ||
+    message.includes("unable to find signing key")
+  ) {
     return true;
   }
 
@@ -104,6 +110,7 @@ const isJwksUnavailableError = (error: unknown): boolean => {
     message.includes("enotfound") ||
     message.includes("etimedout") ||
     message.includes("socket hang up") ||
+    message.includes("jwks endpoint unavailable") ||
     message.includes("rate limit")
   ) {
     return true;

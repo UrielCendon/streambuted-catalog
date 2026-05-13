@@ -30,6 +30,7 @@ export class UpdateTrackUseCase {
       input.genre === undefined &&
       input.audioAssetId === undefined &&
       input.coverAssetId === undefined &&
+      input.durationSeconds === undefined &&
       input.albumId === undefined
     ) {
       throw new AppError(400, "ValidationError", "At least one track field must be provided.");

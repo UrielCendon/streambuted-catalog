@@ -8,6 +8,7 @@ export interface Track {
   genre: string;
   audioAssetId: string;
   coverAssetId: string;
+  durationSeconds: number | null;
   status: CatalogStatus;
   createdAt: Date;
   updatedAt: Date;

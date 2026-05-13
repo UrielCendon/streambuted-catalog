@@ -6,6 +6,7 @@ import morgan from "morgan";
 import { AuthorizationService } from "./application/services/AuthorizationService";
 import { CreateAlbumUseCase } from "./application/useCases/albums/CreateAlbumUseCase";
 import { GetAlbumByIdUseCase } from "./application/useCases/albums/GetAlbumByIdUseCase";
+import { ListAlbumTracksUseCase } from "./application/useCases/albums/ListAlbumTracksUseCase";
 import { ListArtistAlbumsUseCase } from "./application/useCases/albums/ListArtistAlbumsUseCase";
 import { RetireAlbumUseCase } from "./application/useCases/albums/RetireAlbumUseCase";
 import { UpdateAlbumUseCase } from "./application/useCases/albums/UpdateAlbumUseCase";
@@ -28,6 +29,7 @@ import { CatalogController } from "./interfaces/http/controllers/CatalogControll
 import { createAuthenticationMiddleware } from "./interfaces/http/middleware/AuthenticationMiddleware";
 import { errorHandlerMiddleware, notFoundMiddleware } from "./interfaces/http/middleware/ErrorHandlerMiddleware";
 import { buildCatalogRouter } from "./interfaces/http/routes/CatalogRoutes";
+import { createCatalogPlaybackGrpcServer } from "./interfaces/grpc/CatalogPlaybackGrpcServer";
 
 dotenv.config();
 
@@ -47,6 +49,7 @@ const parseAllowedOrigins = (): string[] => {
 export interface ApplicationContext {
   app: Express;
   identityPromotionConsumer: IdentityPromotionConsumer;
+  catalogPlaybackGrpcServer: import("@grpc/grpc-js").Server;
 }
 
 export const createApplication = (): ApplicationContext => {
@@ -78,12 +81,13 @@ export const createApplication = (): ApplicationContext => {
     mediaAssetValidator
   );
   const getAlbumByIdUseCase = new GetAlbumByIdUseCase(albumRepository);
+  const listAlbumTracksUseCase = new ListAlbumTracksUseCase(albumRepository, trackRepository);
   const updateAlbumUseCase = new UpdateAlbumUseCase(
     albumRepository,
     authorizationService,
     mediaAssetValidator
   );
-  const retireAlbumUseCase = new RetireAlbumUseCase(albumRepository, authorizationService);
+  const retireAlbumUseCase = new RetireAlbumUseCase(albumRepository, trackRepository, authorizationService);
   const listArtistAlbumsUseCase = new ListArtistAlbumsUseCase(albumRepository);
 
   const createTrackUseCase = new CreateTrackUseCase(
@@ -104,7 +108,11 @@ export const createApplication = (): ApplicationContext => {
   const listArtistTracksUseCase = new ListArtistTracksUseCase(trackRepository);
 
   const getArtistByIdUseCase = new GetArtistByIdUseCase(artistRepository);
-  const updateArtistProfileUseCase = new UpdateArtistProfileUseCase(artistRepository, authorizationService);
+  const updateArtistProfileUseCase = new UpdateArtistProfileUseCase(
+    artistRepository,
+    authorizationService,
+    mediaAssetValidator
+  );
 
   const searchCatalogUseCase = new SearchCatalogUseCase(artistRepository, albumRepository, trackRepository);
   const handleUserPromotedUseCase = new HandleUserPromotedUseCase(artistRepository);
@@ -115,6 +123,7 @@ export const createApplication = (): ApplicationContext => {
     updateAlbumUseCase,
     retireAlbumUseCase,
     getAlbumByIdUseCase,
+    listAlbumTracksUseCase,
     listArtistAlbumsUseCase,
     createTrackUseCase,
     updateTrackUseCase,
@@ -174,6 +183,7 @@ export const createApplication = (): ApplicationContext => {
 
   return {
     app,
-    identityPromotionConsumer
+    identityPromotionConsumer,
+    catalogPlaybackGrpcServer: createCatalogPlaybackGrpcServer(trackRepository)
   };
 };

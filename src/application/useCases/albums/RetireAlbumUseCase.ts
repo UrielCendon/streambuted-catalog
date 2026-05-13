@@ -4,10 +4,12 @@ import { AuthorizationService } from "../../services/AuthorizationService";
 import { Album } from "../../../domain/entities/Album";
 import { CatalogStatus } from "../../../domain/enums/CatalogStatus";
 import { AlbumRepository } from "../../../domain/repositories/AlbumRepository";
+import { TrackRepository } from "../../../domain/repositories/TrackRepository";
 
 export class RetireAlbumUseCase {
   constructor(
     private readonly albumRepository: AlbumRepository,
+    private readonly trackRepository: TrackRepository,
     private readonly authorizationService: AuthorizationService
   ) {}
 
@@ -20,9 +22,13 @@ export class RetireAlbumUseCase {
     this.authorizationService.assertArtistOwnership(user, album.artistId);
 
     if (album.status === CatalogStatus.Retirado) {
+      await this.trackRepository.detachAlbum(albumId);
       return album;
     }
 
-    return this.albumRepository.retire(albumId);
+    const retiredAlbum = await this.albumRepository.retire(albumId);
+    await this.trackRepository.detachAlbum(albumId);
+
+    return retiredAlbum;
   }
 }

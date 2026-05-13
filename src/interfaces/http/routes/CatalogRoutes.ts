@@ -34,6 +34,7 @@ export const buildCatalogRouter = (
   router.get("/artists/:artistId/tracks", validateRequest(artistIdParamSchema), catalogController.listArtistTracks);
 
   router.get("/albums/:albumId", validateRequest(albumIdParamSchema), catalogController.getAlbumById);
+  router.get("/albums/:albumId/tracks", validateRequest(albumIdParamSchema), catalogController.listAlbumTracks);
   router.post("/albums", authenticationMiddleware, validateRequest(createAlbumSchema), catalogController.createAlbum);
   router.patch(
     "/albums/:albumId",

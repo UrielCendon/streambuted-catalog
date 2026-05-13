@@ -9,6 +9,7 @@ describe("HandleUserPromotedUseCase", () => {
         artistId: "e1cc9f53-c052-4e3d-a0cc-894de7d75dd1",
         displayName: "newartist",
         biography: null,
+        profileImageAssetId: null,
         createdAt: new Date(),
         updatedAt: new Date()
       }),
@@ -32,7 +33,8 @@ describe("HandleUserPromotedUseCase", () => {
     expect(artistRepository.upsertPromotedArtist).toHaveBeenCalledWith({
       artistId: "e1cc9f53-c052-4e3d-a0cc-894de7d75dd1",
       displayName: "newartist",
-      biography: null
+      biography: null,
+      profileImageAssetId: null
     });
   });
 });

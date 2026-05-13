@@ -2,6 +2,7 @@ import { z } from "zod";
 
 const uuidSchema = z.string().uuid();
 const genreSchema = z.string().trim().min(1).max(80);
+const durationSecondsSchema = z.number().finite().positive().nullable();
 
 const hasAtLeastOneField = (value: Record<string, unknown>, fieldNames: string[]): boolean =>
   fieldNames.some((fieldName) => value[fieldName] !== undefined);
@@ -12,17 +13,23 @@ const hasAtLeastOneAlias = (value: Record<string, unknown>, aliases: [string, st
 const hasAtLeastOneOf = (value: Record<string, unknown>, fieldNames: string[]): boolean =>
   fieldNames.some((fieldName) => value[fieldName] !== undefined);
 
+const firstDefined = <T extends Record<string, unknown>>(value: T, firstKey: keyof T, secondKey: keyof T) =>
+  value[firstKey] !== undefined ? value[firstKey] : value[secondKey];
+
 const createArtistProfileBodySchema = z
   .object({
     displayName: z.string().trim().min(1).max(120).optional(),
     display_name: z.string().trim().min(1).max(120).optional(),
-    biography: z.string().trim().max(4000).nullable().optional()
+    biography: z.string().trim().max(4000).nullable().optional(),
+    profileImageAssetId: uuidSchema.nullable().optional(),
+    profile_image_asset_id: uuidSchema.nullable().optional()
   })
   .transform((value) => ({
     displayName: value.displayName ?? value.display_name,
-    biography: value.biography
+    biography: value.biography,
+    profileImageAssetId: firstDefined(value, "profileImageAssetId", "profile_image_asset_id")
   }))
-  .refine((value) => hasAtLeastOneField(value, ["displayName", "biography"]), {
+  .refine((value) => hasAtLeastOneField(value, ["displayName", "biography", "profileImageAssetId"]), {
     message: "At least one profile field must be provided."
   });
 
@@ -64,7 +71,9 @@ const createTrackBodySchema = z
     audioAssetId: uuidSchema.optional(),
     audio_asset_id: uuidSchema.optional(),
     coverAssetId: uuidSchema.optional(),
-    cover_asset_id: uuidSchema.optional()
+    cover_asset_id: uuidSchema.optional(),
+    durationSeconds: durationSecondsSchema.optional(),
+    duration_seconds: durationSecondsSchema.optional()
   })
   .refine((value) => hasAtLeastOneAlias(value, ["audioAssetId", "audio_asset_id"]), {
     message: "audioAssetId or audio_asset_id is required."
@@ -76,11 +85,12 @@ const createTrackBodySchema = z
     message: "coverAssetId or cover_asset_id is required."
   })
   .transform((value) => ({
-    albumId: value.albumId ?? value.album_id,
+    albumId: firstDefined(value, "albumId", "album_id"),
     title: value.title,
     genre: value.genre ?? value.genero,
     audioAssetId: value.audioAssetId ?? value.audio_asset_id,
-    coverAssetId: value.coverAssetId ?? value.cover_asset_id
+    coverAssetId: value.coverAssetId ?? value.cover_asset_id,
+    durationSeconds: firstDefined(value, "durationSeconds", "duration_seconds")
   }));
 
 const createTrackInAlbumBodySchema = z
@@ -91,7 +101,9 @@ const createTrackInAlbumBodySchema = z
     audioAssetId: uuidSchema.optional(),
     audio_asset_id: uuidSchema.optional(),
     coverAssetId: uuidSchema.optional(),
-    cover_asset_id: uuidSchema.optional()
+    cover_asset_id: uuidSchema.optional(),
+    durationSeconds: durationSecondsSchema.optional(),
+    duration_seconds: durationSecondsSchema.optional()
   })
   .refine((value) => hasAtLeastOneAlias(value, ["audioAssetId", "audio_asset_id"]), {
     message: "audioAssetId or audio_asset_id is required."
@@ -106,7 +118,8 @@ const createTrackInAlbumBodySchema = z
     title: value.title,
     genre: value.genre ?? value.genero,
     audioAssetId: value.audioAssetId ?? value.audio_asset_id,
-    coverAssetId: value.coverAssetId ?? value.cover_asset_id
+    coverAssetId: value.coverAssetId ?? value.cover_asset_id,
+    durationSeconds: firstDefined(value, "durationSeconds", "duration_seconds")
   }));
 
 const updateTrackBodySchema = z
@@ -119,16 +132,19 @@ const updateTrackBodySchema = z
     audioAssetId: uuidSchema.optional(),
     audio_asset_id: uuidSchema.optional(),
     coverAssetId: uuidSchema.optional(),
-    cover_asset_id: uuidSchema.optional()
+    cover_asset_id: uuidSchema.optional(),
+    durationSeconds: durationSecondsSchema.optional(),
+    duration_seconds: durationSecondsSchema.optional()
   })
   .transform((value) => ({
-    albumId: value.albumId ?? value.album_id,
+    albumId: firstDefined(value, "albumId", "album_id"),
     title: value.title,
     genre: value.genre ?? value.genero,
     audioAssetId: value.audioAssetId ?? value.audio_asset_id,
-    coverAssetId: value.coverAssetId ?? value.cover_asset_id
+    coverAssetId: value.coverAssetId ?? value.cover_asset_id,
+    durationSeconds: firstDefined(value, "durationSeconds", "duration_seconds")
   }))
-  .refine((value) => hasAtLeastOneField(value, ["albumId", "title", "genre", "audioAssetId", "coverAssetId"]), {
+  .refine((value) => hasAtLeastOneField(value, ["albumId", "title", "genre", "audioAssetId", "coverAssetId", "durationSeconds"]), {
     message: "At least one track field must be provided."
   });
 

@@ -16,8 +16,10 @@ describe("CreateTrackUseCase", () => {
       findById: jest.fn(),
       update: jest.fn(),
       retire: jest.fn(),
+      detachAlbum: jest.fn(),
       searchPublishedByTitle: jest.fn(),
-      listByArtist: jest.fn()
+      listByArtist: jest.fn(),
+      listPublishedByAlbum: jest.fn()
     };
 
     const artistRepository: jest.Mocked<ArtistRepository> = {
@@ -65,6 +67,7 @@ describe("CreateTrackUseCase", () => {
       genre: "Rock",
       audioAssetId: "173d3f1d-9ddb-44e6-af70-779d8bfa9c45",
       coverAssetId: "688f6a27-a86a-4f8c-af24-2ec6a13eafca",
+      durationSeconds: null,
       status: CatalogStatus.Publicado,
       createdAt: new Date(),
       updatedAt: new Date()
@@ -100,6 +103,10 @@ describe("CreateTrackUseCase", () => {
           ownerUserId: "8dbf424d-c519-4b2a-8018-2992a5f3f0fd",
           contentType: "audio/mpeg",
           sizeBytes: 42,
+          durationSeconds:
+            assetId === "173d3f1d-9ddb-44e6-af70-779d8bfa9c45"
+              ? 180
+              : null,
           exists: true
         })
       )
@@ -114,6 +121,7 @@ describe("CreateTrackUseCase", () => {
       genre: "Rock",
       audioAssetId: "173d3f1d-9ddb-44e6-af70-779d8bfa9c45",
       coverAssetId: "688f6a27-a86a-4f8c-af24-2ec6a13eafca",
+      durationSeconds: 180,
       status: CatalogStatus.Publicado,
       createdAt: new Date(),
       updatedAt: new Date()
@@ -144,7 +152,9 @@ describe("CreateTrackUseCase", () => {
       "688f6a27-a86a-4f8c-af24-2ec6a13eafca",
       "Bearer token"
     );
-    expect(trackRepository.create).toHaveBeenCalledTimes(1);
+    expect(trackRepository.create).toHaveBeenCalledWith(expect.objectContaining({
+      durationSeconds: 180
+    }));
   });
 
   it("rejects a track when the audio asset has the wrong type", async () => {
@@ -155,6 +165,7 @@ describe("CreateTrackUseCase", () => {
         ownerUserId: "8dbf424d-c519-4b2a-8018-2992a5f3f0fd",
         contentType: "image/png",
         sizeBytes: 42,
+        durationSeconds: null,
         exists: true
       })
     };
@@ -192,6 +203,7 @@ describe("CreateTrackUseCase", () => {
         ownerUserId: "d3d87e12-3fd0-4d3f-af1e-77330831257b",
         contentType: "audio/mpeg",
         sizeBytes: 42,
+        durationSeconds: 180,
         exists: true
       })
     };

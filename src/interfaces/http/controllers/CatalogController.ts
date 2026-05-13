@@ -3,6 +3,7 @@ import { GetArtistByIdUseCase } from "../../../application/useCases/artists/GetA
 import { UpdateArtistProfileUseCase } from "../../../application/useCases/artists/UpdateArtistProfileUseCase";
 import { CreateAlbumUseCase } from "../../../application/useCases/albums/CreateAlbumUseCase";
 import { GetAlbumByIdUseCase } from "../../../application/useCases/albums/GetAlbumByIdUseCase";
+import { ListAlbumTracksUseCase } from "../../../application/useCases/albums/ListAlbumTracksUseCase";
 import { ListArtistAlbumsUseCase } from "../../../application/useCases/albums/ListArtistAlbumsUseCase";
 import { RetireAlbumUseCase } from "../../../application/useCases/albums/RetireAlbumUseCase";
 import { UpdateAlbumUseCase } from "../../../application/useCases/albums/UpdateAlbumUseCase";
@@ -14,12 +15,16 @@ import { RetireTrackUseCase } from "../../../application/useCases/tracks/RetireT
 import { UpdateTrackUseCase } from "../../../application/useCases/tracks/UpdateTrackUseCase";
 import { AppError } from "../../../application/errors/AppError";
 
+const readAlias = (body: Record<string, unknown>, firstKey: string, secondKey: string): unknown =>
+  body[firstKey] !== undefined ? body[firstKey] : body[secondKey];
+
 interface CatalogControllerDependencies {
   searchCatalogUseCase: SearchCatalogUseCase;
   createAlbumUseCase: CreateAlbumUseCase;
   updateAlbumUseCase: UpdateAlbumUseCase;
   retireAlbumUseCase: RetireAlbumUseCase;
   getAlbumByIdUseCase: GetAlbumByIdUseCase;
+  listAlbumTracksUseCase: ListAlbumTracksUseCase;
   listArtistAlbumsUseCase: ListArtistAlbumsUseCase;
   createTrackUseCase: CreateTrackUseCase;
   updateTrackUseCase: UpdateTrackUseCase;
@@ -116,6 +121,18 @@ export class CatalogController {
     }
   };
 
+  public listAlbumTracks = async (request: Request, response: Response, next: NextFunction): Promise<void> => {
+    try {
+      const tracks = await this.dependencies.listAlbumTracksUseCase.execute(request.params.albumId);
+      response.status(200).json({
+        albumId: request.params.albumId,
+        tracks
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   public listArtistAlbums = async (request: Request, response: Response, next: NextFunction): Promise<void> => {
     try {
       const albums = await this.dependencies.listArtistAlbumsUseCase.execute(request.params.artistId, false);
@@ -135,11 +152,12 @@ export class CatalogController {
       const createdTrack = await this.dependencies.createTrackUseCase.execute(
         {
           artistId: authenticatedUser.subject,
-          albumId: request.body.albumId ?? request.body.album_id,
+          albumId: readAlias(request.body, "albumId", "album_id") as string | null | undefined,
           title: request.body.title,
           genre: request.body.genre ?? request.body.genero,
           audioAssetId: request.body.audioAssetId ?? request.body.audio_asset_id,
-          coverAssetId: request.body.coverAssetId ?? request.body.cover_asset_id
+          coverAssetId: request.body.coverAssetId ?? request.body.cover_asset_id,
+          durationSeconds: readAlias(request.body, "durationSeconds", "duration_seconds") as number | null | undefined
         },
         authenticatedUser
       );
@@ -163,7 +181,8 @@ export class CatalogController {
           title: request.body.title,
           genre: request.body.genre ?? request.body.genero,
           audioAssetId: request.body.audioAssetId ?? request.body.audio_asset_id,
-          coverAssetId: request.body.coverAssetId ?? request.body.cover_asset_id
+          coverAssetId: request.body.coverAssetId ?? request.body.cover_asset_id,
+          durationSeconds: readAlias(request.body, "durationSeconds", "duration_seconds") as number | null | undefined
         },
         authenticatedUser
       );
@@ -183,11 +202,12 @@ export class CatalogController {
       const track = await this.dependencies.updateTrackUseCase.execute(
         request.params.trackId,
         {
-          albumId: request.body.albumId ?? request.body.album_id,
+          albumId: readAlias(request.body, "albumId", "album_id") as string | null | undefined,
           title: request.body.title,
           genre: request.body.genre ?? request.body.genero,
           audioAssetId: request.body.audioAssetId ?? request.body.audio_asset_id,
-          coverAssetId: request.body.coverAssetId ?? request.body.cover_asset_id
+          coverAssetId: request.body.coverAssetId ?? request.body.cover_asset_id,
+          durationSeconds: readAlias(request.body, "durationSeconds", "duration_seconds") as number | null | undefined
         },
         authenticatedUser
       );
@@ -249,7 +269,8 @@ export class CatalogController {
         request.params.artistId,
         {
           displayName: request.body.displayName ?? request.body.display_name,
-          biography: request.body.biography
+          biography: request.body.biography,
+          profileImageAssetId: readAlias(request.body, "profileImageAssetId", "profile_image_asset_id") as string | null | undefined
         },
         authenticatedUser
       );

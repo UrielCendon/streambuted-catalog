@@ -22,6 +22,7 @@ const mapTrack = (track: {
   genre: string;
   audioAssetId: string;
   coverAssetId: string;
+  durationSeconds: number | null;
   status: PrismaCatalogStatus;
   createdAt: Date;
   updatedAt: Date;
@@ -33,6 +34,7 @@ const mapTrack = (track: {
   genre: track.genre,
   audioAssetId: track.audioAssetId,
   coverAssetId: track.coverAssetId,
+  durationSeconds: track.durationSeconds,
   status: toDomainStatus(track.status),
   createdAt: track.createdAt,
   updatedAt: track.updatedAt
@@ -50,6 +52,7 @@ export class PrismaTrackRepository implements TrackRepository {
         genre: input.genre,
         audioAssetId: input.audioAssetId,
         coverAssetId: input.coverAssetId,
+        durationSeconds: input.durationSeconds ?? null,
         status: toPrismaStatus(input.status ?? CatalogStatus.Publicado)
       }
     });
@@ -73,7 +76,8 @@ export class PrismaTrackRepository implements TrackRepository {
         title: input.title,
         genre: input.genre,
         audioAssetId: input.audioAssetId,
-        coverAssetId: input.coverAssetId
+        coverAssetId: input.coverAssetId,
+        durationSeconds: input.durationSeconds
       }
     });
 
@@ -89,6 +93,15 @@ export class PrismaTrackRepository implements TrackRepository {
     });
 
     return mapTrack(track);
+  }
+
+  public async detachAlbum(albumId: string): Promise<number> {
+    const result = await this.prisma.track.updateMany({
+      where: { albumId },
+      data: { albumId: null }
+    });
+
+    return result.count;
   }
 
   public async searchPublishedByTitle(query: string, pagination: Pagination): Promise<Track[]> {
@@ -128,6 +141,20 @@ export class PrismaTrackRepository implements TrackRepository {
       },
       orderBy: {
         createdAt: "desc"
+      }
+    });
+
+    return tracks.map(mapTrack);
+  }
+
+  public async listPublishedByAlbum(albumId: string): Promise<Track[]> {
+    const tracks = await this.prisma.track.findMany({
+      where: {
+        albumId,
+        status: PRISMA_STATUS_PUBLICADO
+      },
+      orderBy: {
+        createdAt: "asc"
       }
     });
 

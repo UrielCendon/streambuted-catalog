@@ -13,13 +13,14 @@ enum CatalogStatus {
 }
 
 model Artist {
-  artistId    String   @id @default(uuid()) @db.Uuid @map("artist_id")
-  displayName String   @map("display_name")
-  biography   String?
-  albums      Album[]
-  tracks      Track[]
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  artistId            String   @id @default(uuid()) @db.Uuid @map("artist_id")
+  displayName         String   @map("display_name")
+  biography           String?
+  profileImageAssetId String?  @db.Uuid @map("profile_image_asset_id")
+  albums              Album[]
+  tracks              Track[]
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
 
   @@map("artist")
 }
@@ -50,6 +51,7 @@ model Track {
   genre         String        @default("Sin genero")
   audioAssetId  String        @db.Uuid @map("audio_asset_id")
   coverAssetId  String        @db.Uuid @map("cover_asset_id")
+  durationSeconds Float?      @map("duration_seconds")
   status        CatalogStatus @default(PUBLICADO)
   createdAt     DateTime      @default(now()) @map("created_at")
   updatedAt     DateTime      @updatedAt @map("updated_at")

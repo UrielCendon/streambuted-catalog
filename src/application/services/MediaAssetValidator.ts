@@ -8,6 +8,7 @@ export interface MediaAssetMetadata {
   ownerUserId: string;
   contentType: string;
   sizeBytes: number;
+  durationSeconds?: number | null;
   exists: boolean;
 }
 
@@ -21,9 +22,9 @@ export async function assertMediaAssetMatches(
   expectedType: MediaAssetType,
   ownerUserId: string,
   authorizationHeader?: string
-): Promise<void> {
+): Promise<MediaAssetMetadata | null> {
   if (!validator) {
-    return;
+    return null;
   }
 
   if (!authorizationHeader) {
@@ -46,4 +47,6 @@ export async function assertMediaAssetMatches(
       "The referenced media asset does not belong to the authenticated user."
     );
   }
+
+  return metadata;
 }

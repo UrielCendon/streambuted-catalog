@@ -1,13 +1,18 @@
 import { AuthenticatedUser } from "../../auth/AuthenticatedUser";
 import { AppError } from "../../errors/AppError";
 import { AuthorizationService } from "../../services/AuthorizationService";
+import {
+  assertMediaAssetMatches,
+  MediaAssetValidator
+} from "../../services/MediaAssetValidator";
 import { Artist } from "../../../domain/entities/Artist";
 import { ArtistRepository, UpdateArtistInput } from "../../../domain/repositories/ArtistRepository";
 
 export class UpdateArtistProfileUseCase {
   constructor(
     private readonly artistRepository: ArtistRepository,
-    private readonly authorizationService: AuthorizationService
+    private readonly authorizationService: AuthorizationService,
+    private readonly mediaAssetValidator?: MediaAssetValidator
   ) {}
 
   public async execute(artistId: string, input: UpdateArtistInput, user: AuthenticatedUser): Promise<Artist> {
@@ -18,8 +23,18 @@ export class UpdateArtistProfileUseCase {
       throw new AppError(404, "ArtistNotFound", "Artist not found.");
     }
 
-    if (!input.displayName && input.biography === undefined) {
+    if (!input.displayName && input.biography === undefined && input.profileImageAssetId === undefined) {
       throw new AppError(400, "ValidationError", "At least one artist profile field must be provided.");
+    }
+
+    if (input.profileImageAssetId) {
+      await assertMediaAssetMatches(
+        this.mediaAssetValidator,
+        input.profileImageAssetId,
+        "PROFILE_IMAGE",
+        user.subject,
+        user.authorizationHeader
+      );
     }
 
     return this.artistRepository.updateProfile(artistId, input);

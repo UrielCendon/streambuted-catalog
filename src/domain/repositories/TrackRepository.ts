@@ -9,6 +9,7 @@ export interface CreateTrackInput {
   genre: string;
   audioAssetId: string;
   coverAssetId: string;
+  durationSeconds?: number | null;
   status?: CatalogStatus;
 }
 
@@ -18,6 +19,7 @@ export interface UpdateTrackInput {
   genre?: string;
   audioAssetId?: string;
   coverAssetId?: string;
+  durationSeconds?: number | null;
 }
 
 export interface TrackRepository {
@@ -25,6 +27,8 @@ export interface TrackRepository {
   findById(trackId: string): Promise<Track | null>;
   update(trackId: string, input: UpdateTrackInput): Promise<Track>;
   retire(trackId: string): Promise<Track>;
+  detachAlbum(albumId: string): Promise<number>;
   searchPublishedByTitle(query: string, pagination: Pagination): Promise<Track[]>;
   listByArtist(artistId: string, includeRetired: boolean): Promise<Track[]>;
+  listPublishedByAlbum(albumId: string): Promise<Track[]>;
 }

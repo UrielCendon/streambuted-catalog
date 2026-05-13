@@ -21,6 +21,7 @@ interface GrpcAssetMetadataResponse {
   ownerUserId?: string;
   contentType?: string;
   sizeBytes?: number | string;
+  durationSeconds?: number | string;
   exists?: boolean;
 }
 
@@ -173,12 +174,22 @@ const normalizeMetadataResponse = (
     );
   }
 
+  const parsedDurationSeconds = response.durationSeconds === undefined
+    ? null
+    : Number(response.durationSeconds);
+  const durationSeconds = parsedDurationSeconds !== null &&
+    Number.isFinite(parsedDurationSeconds) &&
+    parsedDurationSeconds > 0
+    ? parsedDurationSeconds
+    : null;
+
   return {
     assetId: response.assetId || assetId,
     assetType: response.assetType as MediaAssetMetadata["assetType"],
     ownerUserId: response.ownerUserId,
     contentType: response.contentType,
     sizeBytes: Number(response.sizeBytes ?? 0),
+    durationSeconds,
     exists: response.exists
   };
 };

@@ -8,6 +8,7 @@ export interface UserPromotedEvent {
   username?: string;
   previousRole?: string;
   newRole?: string;
+  profileImageAssetId?: string | null;
   promotedAt?: string;
 }
 
@@ -19,7 +20,8 @@ export class HandleUserPromotedUseCase {
     return this.artistRepository.upsertPromotedArtist({
       artistId: event.userId,
       displayName,
-      biography: null
+      biography: null,
+      profileImageAssetId: event.profileImageAssetId ?? null
     });
   }
 

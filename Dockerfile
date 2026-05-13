@@ -24,7 +24,7 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/contracts ./contracts
 
-EXPOSE 8082
+EXPOSE 8082 9092
 
 USER appuser
 CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
