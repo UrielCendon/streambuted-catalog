@@ -2,6 +2,15 @@ import amqplib, { Channel, ChannelModel, ConsumeMessage } from "amqplib";
 import crypto from "crypto";
 import { z } from "zod";
 import { HandleUserPromotedUseCase } from "../../application/useCases/artists/HandleUserPromotedUseCase";
+import { logger } from "../logging/logger";
+
+const IDENTITY_EVENTS_EXCHANGE = "identity.events";
+const USER_PROMOTED_ROUTING_KEY = "user.promoted";
+const SIGNATURE_HEADER = "X-Event-Signature";
+const HMAC_ALGORITHM = "sha256";
+const PREFETCH_COUNT = 10;
+const BASE_RECONNECT_DELAY_MS = 1000;
+const MAX_RECONNECT_DELAY_MS = 30000;
 
 const userPromotedEventSchema = z.object({
   eventId: z.string().uuid().optional(),
@@ -76,19 +85,19 @@ export class IdentityPromotionConsumer {
       this.registerConnectionHandlers(connection);
       this.registerChannelHandlers(channel);
 
-      await channel.assertExchange("identity.events", "topic", { durable: true });
+      await channel.assertExchange(IDENTITY_EVENTS_EXCHANGE, "topic", { durable: true });
       await channel.assertQueue(this.queueName, { durable: true });
-      await channel.bindQueue(this.queueName, "identity.events", "user.promoted");
-      await channel.prefetch(10);
+      await channel.bindQueue(this.queueName, IDENTITY_EVENTS_EXCHANGE, USER_PROMOTED_ROUTING_KEY);
+      await channel.prefetch(PREFETCH_COUNT);
 
       await channel.consume(this.queueName, async (message) => {
         await this.handleMessage(message);
       });
 
       this.reconnectAttempts = 0;
-      console.log("Identity promotion consumer connected to RabbitMQ.");
+      logger.info("Identity promotion consumer connected to RabbitMQ.");
     } catch (error) {
-      console.error("Failed to connect to RabbitMQ:", error);
+      logger.error("Failed to connect to RabbitMQ:", error);
       await this.cleanupResources();
       this.scheduleReconnect("RabbitMQ startup failed.");
     } finally {
@@ -114,15 +123,20 @@ export class IdentityPromotionConsumer {
     }
 
     try {
-      // Always verify: constructor guarantees signingSecret is non-empty
-      const signatureHeader = message.properties?.headers?.["X-Event-Signature"] as string | undefined;
+      // Constructor guarantees the signing secret is non-empty before consuming events.
+      const signatureHeader = message.properties?.headers?.[SIGNATURE_HEADER] as string | undefined;
       const payloadString = message.content.toString();
-      const expected = crypto.createHmac("sha256", this.signingSecret).update(payloadString, "utf8").digest("base64");
-      const a = Buffer.from(expected, "utf8");
-      const b = Buffer.from(String(signatureHeader ?? ""), "utf8");
-      const valid = a.length === b.length && crypto.timingSafeEqual(a, b);
-      if (!valid) {
-        console.warn("Rejected message due to invalid signature. Possible tampering or misconfigured publisher.");
+      const expectedSignature = crypto
+        .createHmac(HMAC_ALGORITHM, this.signingSecret)
+        .update(payloadString, "utf8")
+        .digest("base64");
+      const expectedSignatureBuffer = Buffer.from(expectedSignature, "utf8");
+      const receivedSignatureBuffer = Buffer.from(String(signatureHeader ?? ""), "utf8");
+      const isSignatureValid =
+        expectedSignatureBuffer.length === receivedSignatureBuffer.length &&
+        crypto.timingSafeEqual(expectedSignatureBuffer, receivedSignatureBuffer);
+      if (!isSignatureValid) {
+        logger.warn("Rejected message due to invalid signature. Possible tampering or misconfigured publisher.");
         this.channel.nack(message, false, false);
         return;
       }
@@ -137,7 +151,7 @@ export class IdentityPromotionConsumer {
       await this.handleUserPromotedUseCase.execute(event);
       this.channel.ack(message);
     } catch (error) {
-      console.error("Failed to process user.promoted event:", error);
+      logger.error("Failed to process user.promoted event:", error);
 
       const isMalformedMessageError = error instanceof SyntaxError || error instanceof z.ZodError;
       this.channel.nack(message, false, !isMalformedMessageError);
@@ -150,7 +164,7 @@ export class IdentityPromotionConsumer {
         return;
       }
 
-      console.error("RabbitMQ connection error:", error);
+      logger.error("RabbitMQ connection error:", error);
       void this.handleConnectionLoss("RabbitMQ connection error.");
     });
 
@@ -159,7 +173,7 @@ export class IdentityPromotionConsumer {
         return;
       }
 
-      console.warn("RabbitMQ connection closed.");
+      logger.warn("RabbitMQ connection closed.");
       void this.handleConnectionLoss("RabbitMQ connection closed.");
     });
   }
@@ -170,7 +184,7 @@ export class IdentityPromotionConsumer {
         return;
       }
 
-      console.error("RabbitMQ channel error:", error);
+      logger.error("RabbitMQ channel error:", error);
       void this.handleConnectionLoss("RabbitMQ channel error.");
     });
 
@@ -179,7 +193,7 @@ export class IdentityPromotionConsumer {
         return;
       }
 
-      console.warn("RabbitMQ channel closed.");
+      logger.warn("RabbitMQ channel closed.");
       void this.handleConnectionLoss("RabbitMQ channel closed.");
     });
   }
@@ -204,7 +218,7 @@ export class IdentityPromotionConsumer {
     }
 
     const delayMs = this.nextReconnectDelayMs();
-    console.warn(`${reason} Retrying in ${delayMs}ms (attempt ${this.reconnectAttempts}).`);
+    logger.warn(`${reason} Retrying in ${delayMs}ms (attempt ${this.reconnectAttempts}).`);
 
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null;
@@ -215,9 +229,7 @@ export class IdentityPromotionConsumer {
   private nextReconnectDelayMs(): number {
     this.reconnectAttempts += 1;
 
-    const baseDelayMs = 1000;
-    const maxDelayMs = 30000;
-    return Math.min(maxDelayMs, baseDelayMs * 2 ** (this.reconnectAttempts - 1));
+    return Math.min(MAX_RECONNECT_DELAY_MS, BASE_RECONNECT_DELAY_MS * 2 ** (this.reconnectAttempts - 1));
   }
 
   private async cleanupResources(): Promise<void> {
@@ -228,8 +240,8 @@ export class IdentityPromotionConsumer {
       currentChannel.removeAllListeners();
       try {
         await currentChannel.close();
-      } catch {
-        // Ignore channel close errors during shutdown/recovery.
+      } catch (error) {
+        logger.warn("Failed to close RabbitMQ channel during cleanup.", error);
       }
     }
 
@@ -240,8 +252,8 @@ export class IdentityPromotionConsumer {
       currentConnection.removeAllListeners();
       try {
         await currentConnection.close();
-      } catch {
-        // Ignore connection close errors during shutdown/recovery.
+      } catch (error) {
+        logger.warn("Failed to close RabbitMQ connection during cleanup.", error);
       }
     }
   }

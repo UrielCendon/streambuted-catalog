@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { AppError } from "../../../application/errors/AppError";
+import { logger } from "../../../infrastructure/logging/logger";
 
 export const notFoundMiddleware = (_request: Request, _response: Response, next: NextFunction): void => {
   next(new AppError(404, "NotFound", "Route not found."));
@@ -20,9 +21,9 @@ export const errorHandlerMiddleware = (
     };
 
     if (error.statusCode >= 500) {
-      console.error("Handled AppError:", logPayload);
+      logger.error("Handled AppError:", logPayload);
     } else {
-      console.warn("Handled AppError:", logPayload);
+      logger.warn("Handled AppError:", logPayload);
     }
 
     response.status(error.statusCode).json({
@@ -35,7 +36,7 @@ export const errorHandlerMiddleware = (
     return;
   }
 
-  console.error("Unhandled error:", {
+  logger.error("Unhandled error:", {
     name: error.name,
     message: error.message,
     stack: error.stack ?? null

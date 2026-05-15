@@ -8,6 +8,36 @@ import { createCatalogPlaybackGrpcServer } from "../../../../src/interfaces/grpc
 const TRACK_ID = "8ec8d920-a0f4-467d-ad47-53ecf694cbf4";
 const AUDIO_ASSET_ID = "d63f4e03-8f01-4f79-8da4-2faf3a9eb20f";
 
+interface PlayableTrackResponse {
+  trackId: string;
+  status: CatalogStatus;
+  audioAssetId: string;
+  durationSeconds: number;
+  exists: boolean;
+}
+
+type GetPlayableTrackCallback = (
+  error: grpc.ServiceError | null,
+  response: PlayableTrackResponse
+) => void;
+
+type CatalogPlaybackClient = grpc.Client & {
+  getPlayableTrack(request: { trackId: string }, callback: GetPlayableTrackCallback): void;
+};
+
+interface CatalogPlaybackProtoPackage {
+  streambuted: {
+    catalog: {
+      v1: {
+        CatalogPlaybackService: new (
+          address: string,
+          credentials: grpc.ChannelCredentials
+        ) => CatalogPlaybackClient;
+      };
+    };
+  };
+}
+
 describe("CatalogPlaybackGrpcServer", () => {
   it("returns playable track metadata over gRPC", async () => {
     const repository = {
@@ -76,7 +106,7 @@ const shutdownServer = async (server: grpc.Server): Promise<void> =>
     server.tryShutdown(() => resolve());
   });
 
-const createClient = (port: number): any => {
+const createClient = (port: number): CatalogPlaybackClient => {
   const protoPath = path.resolve(
     process.cwd(),
     "../../contracts/catalog/catalog_playback.proto"
@@ -88,16 +118,21 @@ const createClient = (port: number): any => {
     defaults: false,
     oneofs: true
   });
-  const loadedPackage = grpc.loadPackageDefinition(packageDefinition) as any;
+  const loadedPackage = grpc.loadPackageDefinition(
+    packageDefinition
+  ) as unknown as CatalogPlaybackProtoPackage;
   return new loadedPackage.streambuted.catalog.v1.CatalogPlaybackService(
     `127.0.0.1:${port}`,
     grpc.credentials.createInsecure()
   );
 };
 
-const getPlayableTrack = async (client: any, trackId: string): Promise<any> =>
+const getPlayableTrack = async (
+  client: CatalogPlaybackClient,
+  trackId: string
+): Promise<PlayableTrackResponse> =>
   new Promise((resolve, reject) => {
-    client.getPlayableTrack({ trackId }, (error: grpc.ServiceError | null, response: any) => {
+    client.getPlayableTrack({ trackId }, (error, response) => {
       if (error) {
         reject(error);
         return;

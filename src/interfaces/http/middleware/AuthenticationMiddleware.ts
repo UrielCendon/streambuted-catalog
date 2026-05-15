@@ -167,9 +167,10 @@ export const createAuthenticationMiddleware =
     }
 
     try {
-      // Validate absolute URL
-      // eslint-disable-next-line no-new
-      new URL(jwksUrl);
+      const parsedJwksUrl = new URL(jwksUrl);
+      if (!parsedJwksUrl.protocol || !parsedJwksUrl.host) {
+        throw new Error("Invalid absolute URL.");
+      }
     } catch {
       throw new Error("Invalid JWT_JWKS_URL: must be a valid absolute URL.");
     }
