@@ -55,7 +55,7 @@ export interface ApplicationContext {
 export const createApplication = (): ApplicationContext => {
   const jwksUrl = process.env.JWT_JWKS_URL;
   const jwtIssuer = process.env.JWT_ISSUER ?? "http://identity-service:8081";
-  const jwtAudience = process.env.JWT_AUDIENCE;
+  const jwtAudience = process.env.JWT_AUDIENCE?.trim() || "streambuted-api";
   const allowedOrigins = parseAllowedOrigins();
 
   if (!jwksUrl || jwksUrl.trim().length === 0) {
