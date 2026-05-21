@@ -5,6 +5,7 @@ import {
   assertMediaAssetMatches,
   MediaAssetValidator
 } from "../../services/MediaAssetValidator";
+import { CatalogEventRecorder } from "../../services/CatalogEventRecorder";
 import { Track } from "../../../domain/entities/Track";
 import { CatalogStatus } from "../../../domain/enums/CatalogStatus";
 import { AlbumRepository } from "../../../domain/repositories/AlbumRepository";
@@ -27,7 +28,8 @@ export class CreateTrackUseCase {
     private readonly artistRepository: ArtistRepository,
     private readonly albumRepository: AlbumRepository,
     private readonly authorizationService: AuthorizationService,
-    private readonly mediaAssetValidator?: MediaAssetValidator
+    private readonly mediaAssetValidator?: MediaAssetValidator,
+    private readonly catalogEventRecorder?: CatalogEventRecorder
   ) {}
 
   public async execute(command: CreateTrackCommand, user: AuthenticatedUser): Promise<Track> {
@@ -64,7 +66,7 @@ export class CreateTrackUseCase {
       user.authorizationHeader
     );
 
-    return this.trackRepository.create({
+    const track = await this.trackRepository.create({
       artistId: command.artistId,
       albumId: command.albumId ?? null,
       title: command.title,
@@ -74,5 +76,7 @@ export class CreateTrackUseCase {
       durationSeconds: command.durationSeconds ?? audioMetadata?.durationSeconds ?? null,
       status: CatalogStatus.Publicado
     });
+    await this.catalogEventRecorder?.recordTrackSnapshot(track);
+    return track;
   }
 }

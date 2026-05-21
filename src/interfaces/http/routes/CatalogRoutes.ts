@@ -3,6 +3,7 @@ import { CatalogController } from "../controllers/CatalogController";
 import { RequestHandler } from "express-serve-static-core";
 import { validateRequest } from "../middleware/ValidateRequest";
 import {
+  adminCatalogListSchema,
   albumIdParamSchema,
   artistIdParamSchema,
   createAlbumSchema,
@@ -22,6 +23,18 @@ export const buildCatalogRouter = (
   const router = Router();
 
   router.get("/search", validateRequest(searchCatalogSchema), catalogController.searchCatalog);
+  router.get(
+    "/admin/albums",
+    authenticationMiddleware,
+    validateRequest(adminCatalogListSchema),
+    catalogController.listAdminAlbums
+  );
+  router.get(
+    "/admin/tracks",
+    authenticationMiddleware,
+    validateRequest(adminCatalogListSchema),
+    catalogController.listAdminTracks
+  );
 
   router.get("/artists/:artistId", validateRequest(artistIdParamSchema), catalogController.getArtistById);
   router.patch(

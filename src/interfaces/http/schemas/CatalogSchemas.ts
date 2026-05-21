@@ -3,6 +3,17 @@ import { z } from "zod";
 const uuidSchema = z.string().uuid();
 const genreSchema = z.string().trim().min(1).max(80);
 const durationSecondsSchema = z.number().finite().positive().nullable();
+const optionalBooleanQuerySchema = z.preprocess((value) => {
+  if (value === undefined) {
+    return true;
+  }
+
+  if (typeof value === "string") {
+    return value.trim().toLowerCase() === "true";
+  }
+
+  return value;
+}, z.boolean());
 
 const hasAtLeastOneField = (value: Record<string, unknown>, fieldNames: string[]): boolean =>
   fieldNames.some((fieldName) => value[fieldName] !== undefined);
@@ -153,6 +164,16 @@ export const searchCatalogSchema = z.object({
   query: z.object({
     q: z.string().trim().min(1),
     limit: z.coerce.number().int().min(1).max(100).default(20),
+    offset: z.coerce.number().int().min(0).default(0)
+  }),
+  body: z.object({}).passthrough()
+});
+
+export const adminCatalogListSchema = z.object({
+  params: z.object({}).passthrough(),
+  query: z.object({
+    includeRetired: optionalBooleanQuerySchema,
+    limit: z.coerce.number().int().min(1).max(100).default(50),
     offset: z.coerce.number().int().min(0).default(0)
   }),
   body: z.object({}).passthrough()

@@ -5,6 +5,7 @@ import {
   assertMediaAssetMatches,
   MediaAssetValidator
 } from "../../services/MediaAssetValidator";
+import { CatalogEventRecorder } from "../../services/CatalogEventRecorder";
 import { Album } from "../../../domain/entities/Album";
 import { AlbumRepository, UpdateAlbumInput } from "../../../domain/repositories/AlbumRepository";
 
@@ -12,7 +13,8 @@ export class UpdateAlbumUseCase {
   constructor(
     private readonly albumRepository: AlbumRepository,
     private readonly authorizationService: AuthorizationService,
-    private readonly mediaAssetValidator?: MediaAssetValidator
+    private readonly mediaAssetValidator?: MediaAssetValidator,
+    private readonly catalogEventRecorder?: CatalogEventRecorder
   ) {}
 
   public async execute(albumId: string, input: UpdateAlbumInput, user: AuthenticatedUser): Promise<Album> {
@@ -37,6 +39,8 @@ export class UpdateAlbumUseCase {
       );
     }
 
-    return this.albumRepository.update(albumId, input);
+    const updatedAlbum = await this.albumRepository.update(albumId, input);
+    await this.catalogEventRecorder?.recordAlbumSnapshot(updatedAlbum);
+    return updatedAlbum;
   }
 }

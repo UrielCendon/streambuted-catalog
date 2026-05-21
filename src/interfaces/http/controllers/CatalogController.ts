@@ -3,6 +3,7 @@ import { GetArtistByIdUseCase } from "../../../application/useCases/artists/GetA
 import { UpdateArtistProfileUseCase } from "../../../application/useCases/artists/UpdateArtistProfileUseCase";
 import { CreateAlbumUseCase } from "../../../application/useCases/albums/CreateAlbumUseCase";
 import { GetAlbumByIdUseCase } from "../../../application/useCases/albums/GetAlbumByIdUseCase";
+import { ListAdminAlbumsUseCase } from "../../../application/useCases/albums/ListAdminAlbumsUseCase";
 import { ListAlbumTracksUseCase } from "../../../application/useCases/albums/ListAlbumTracksUseCase";
 import { ListArtistAlbumsUseCase } from "../../../application/useCases/albums/ListArtistAlbumsUseCase";
 import { RetireAlbumUseCase } from "../../../application/useCases/albums/RetireAlbumUseCase";
@@ -10,6 +11,7 @@ import { UpdateAlbumUseCase } from "../../../application/useCases/albums/UpdateA
 import { SearchCatalogUseCase } from "../../../application/useCases/catalog/SearchCatalogUseCase";
 import { CreateTrackUseCase } from "../../../application/useCases/tracks/CreateTrackUseCase";
 import { GetTrackByIdUseCase } from "../../../application/useCases/tracks/GetTrackByIdUseCase";
+import { ListAdminTracksUseCase } from "../../../application/useCases/tracks/ListAdminTracksUseCase";
 import { ListArtistTracksUseCase } from "../../../application/useCases/tracks/ListArtistTracksUseCase";
 import { RetireTrackUseCase } from "../../../application/useCases/tracks/RetireTrackUseCase";
 import { UpdateTrackUseCase } from "../../../application/useCases/tracks/UpdateTrackUseCase";
@@ -26,11 +28,13 @@ interface CatalogControllerDependencies {
   getAlbumByIdUseCase: GetAlbumByIdUseCase;
   listAlbumTracksUseCase: ListAlbumTracksUseCase;
   listArtistAlbumsUseCase: ListArtistAlbumsUseCase;
+  listAdminAlbumsUseCase: ListAdminAlbumsUseCase;
   createTrackUseCase: CreateTrackUseCase;
   updateTrackUseCase: UpdateTrackUseCase;
   retireTrackUseCase: RetireTrackUseCase;
   getTrackByIdUseCase: GetTrackByIdUseCase;
   listArtistTracksUseCase: ListArtistTracksUseCase;
+  listAdminTracksUseCase: ListAdminTracksUseCase;
   getArtistByIdUseCase: GetArtistByIdUseCase;
   updateArtistProfileUseCase: UpdateArtistProfileUseCase;
 }
@@ -142,6 +146,27 @@ export class CatalogController {
     }
   };
 
+  public listAdminAlbums = async (request: Request, response: Response, next: NextFunction): Promise<void> => {
+    try {
+      const authenticatedUser = request.authenticatedUser;
+      if (!authenticatedUser) {
+        throw new AppError(401, "Unauthorized", "Authentication is required.");
+      }
+
+      const result = await this.dependencies.listAdminAlbumsUseCase.execute(
+        authenticatedUser,
+        request.query.includeRetired as unknown as boolean,
+        {
+          limit: Number(request.query.limit ?? 50),
+          offset: Number(request.query.offset ?? 0)
+        }
+      );
+      response.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  };
+
   public createTrack = async (request: Request, response: Response, next: NextFunction): Promise<void> => {
     try {
       const authenticatedUser = request.authenticatedUser;
@@ -244,6 +269,27 @@ export class CatalogController {
     try {
       const tracks = await this.dependencies.listArtistTracksUseCase.execute(request.params.artistId, false);
       response.status(200).json(tracks);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  public listAdminTracks = async (request: Request, response: Response, next: NextFunction): Promise<void> => {
+    try {
+      const authenticatedUser = request.authenticatedUser;
+      if (!authenticatedUser) {
+        throw new AppError(401, "Unauthorized", "Authentication is required.");
+      }
+
+      const result = await this.dependencies.listAdminTracksUseCase.execute(
+        authenticatedUser,
+        request.query.includeRetired as unknown as boolean,
+        {
+          limit: Number(request.query.limit ?? 50),
+          offset: Number(request.query.offset ?? 0)
+        }
+      );
+      response.status(200).json(result);
     } catch (error) {
       next(error);
     }

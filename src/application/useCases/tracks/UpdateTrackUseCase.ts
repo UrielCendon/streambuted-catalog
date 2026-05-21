@@ -5,6 +5,7 @@ import {
   assertMediaAssetMatches,
   MediaAssetValidator
 } from "../../services/MediaAssetValidator";
+import { CatalogEventRecorder } from "../../services/CatalogEventRecorder";
 import { Track } from "../../../domain/entities/Track";
 import { AlbumRepository } from "../../../domain/repositories/AlbumRepository";
 import { TrackRepository, UpdateTrackInput } from "../../../domain/repositories/TrackRepository";
@@ -14,7 +15,8 @@ export class UpdateTrackUseCase {
     private readonly trackRepository: TrackRepository,
     private readonly albumRepository: AlbumRepository,
     private readonly authorizationService: AuthorizationService,
-    private readonly mediaAssetValidator?: MediaAssetValidator
+    private readonly mediaAssetValidator?: MediaAssetValidator,
+    private readonly catalogEventRecorder?: CatalogEventRecorder
   ) {}
 
   public async execute(trackId: string, input: UpdateTrackInput, user: AuthenticatedUser): Promise<Track> {
@@ -67,6 +69,8 @@ export class UpdateTrackUseCase {
       );
     }
 
-    return this.trackRepository.update(trackId, input);
+    const updatedTrack = await this.trackRepository.update(trackId, input);
+    await this.catalogEventRecorder?.recordTrackSnapshot(updatedTrack);
+    return updatedTrack;
   }
 }
