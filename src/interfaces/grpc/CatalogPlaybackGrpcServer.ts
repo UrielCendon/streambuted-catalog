@@ -148,7 +148,8 @@ const resolveCatalogPlaybackProtoPath = (configuredProtoPath?: string): string =
     path.resolve(process.cwd(), "../contracts/catalog/catalog_playback.proto"),
     path.resolve(process.cwd(), "../../contracts/catalog/catalog_playback.proto"),
     path.resolve(__dirname, "../../../contracts/catalog/catalog_playback.proto"),
-    path.resolve(__dirname, "../../../../contracts/catalog/catalog_playback.proto")
+    path.resolve(__dirname, "../../../../contracts/catalog/catalog_playback.proto"),
+    path.resolve(__dirname, "../../../../../contracts/catalog/catalog_playback.proto")
   ].filter((candidate): candidate is string => Boolean(candidate));
 
   const resolvedPath = candidates.find((candidate) => fs.existsSync(candidate));

@@ -11,6 +11,8 @@ describe("RetireAlbumUseCase", () => {
       findById: jest.fn(),
       update: jest.fn(),
       retire: jest.fn(),
+      countAllForAdmin: jest.fn(),
+      listAllForAdmin: jest.fn(),
       searchPublishedByTitle: jest.fn(),
       listByArtist: jest.fn()
     };
@@ -23,6 +25,8 @@ describe("RetireAlbumUseCase", () => {
       detachAlbum: jest.fn(),
       searchPublishedByTitle: jest.fn(),
       listByArtist: jest.fn(),
+      countAllForAdmin: jest.fn(),
+      listAllForAdmin: jest.fn(),
       listPublishedByAlbum: jest.fn()
     };
 
