@@ -2,6 +2,7 @@ import { CatalogStatus as PrismaCatalogStatus, PrismaClient } from "@prisma/clie
 import { Album } from "../../domain/entities/Album";
 import { CatalogStatus } from "../../domain/enums/CatalogStatus";
 import {
+  AdminAlbumListItem,
   AlbumRepository,
   CreateAlbumInput,
   UpdateAlbumInput
@@ -30,6 +31,15 @@ const mapAlbum = (album: {
   status: toDomainStatus(album.status),
   createdAt: album.createdAt,
   updatedAt: album.updatedAt
+});
+
+const mapAdminAlbum = (album: Parameters<typeof mapAlbum>[0] & {
+  artist: { displayName: string };
+  _count: { tracks: number };
+}): AdminAlbumListItem => ({
+  ...mapAlbum(album),
+  artistName: album.artist.displayName,
+  trackCount: album._count.tracks
 });
 
 export class PrismaAlbumRepository implements AlbumRepository {
@@ -96,6 +106,33 @@ export class PrismaAlbumRepository implements AlbumRepository {
     });
 
     return albums.map(mapAlbum);
+  }
+
+  public async countAllForAdmin(includeRetired: boolean): Promise<number> {
+    return this.prisma.album.count({
+      where: includeRetired ? {} : { status: PRISMA_STATUS_PUBLICADO }
+    });
+  }
+
+  public async listAllForAdmin(includeRetired: boolean, pagination: Pagination): Promise<AdminAlbumListItem[]> {
+    const albums = await this.prisma.album.findMany({
+      where: includeRetired ? {} : { status: PRISMA_STATUS_PUBLICADO },
+      include: {
+        artist: {
+          select: { displayName: true }
+        },
+        _count: {
+          select: { tracks: true }
+        }
+      },
+      orderBy: {
+        createdAt: "desc"
+      },
+      take: pagination.limit,
+      skip: pagination.offset
+    });
+
+    return albums.map(mapAdminAlbum);
   }
 
   public async listByArtist(artistId: string, includeRetired: boolean): Promise<Album[]> {

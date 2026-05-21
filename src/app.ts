@@ -6,6 +6,7 @@ import morgan from "morgan";
 import { AuthorizationService } from "./application/services/AuthorizationService";
 import { CreateAlbumUseCase } from "./application/useCases/albums/CreateAlbumUseCase";
 import { GetAlbumByIdUseCase } from "./application/useCases/albums/GetAlbumByIdUseCase";
+import { ListAdminAlbumsUseCase } from "./application/useCases/albums/ListAdminAlbumsUseCase";
 import { ListAlbumTracksUseCase } from "./application/useCases/albums/ListAlbumTracksUseCase";
 import { ListArtistAlbumsUseCase } from "./application/useCases/albums/ListArtistAlbumsUseCase";
 import { RetireAlbumUseCase } from "./application/useCases/albums/RetireAlbumUseCase";
@@ -16,9 +17,12 @@ import { UpdateArtistProfileUseCase } from "./application/useCases/artists/Updat
 import { SearchCatalogUseCase } from "./application/useCases/catalog/SearchCatalogUseCase";
 import { CreateTrackUseCase } from "./application/useCases/tracks/CreateTrackUseCase";
 import { GetTrackByIdUseCase } from "./application/useCases/tracks/GetTrackByIdUseCase";
+import { ListAdminTracksUseCase } from "./application/useCases/tracks/ListAdminTracksUseCase";
 import { ListArtistTracksUseCase } from "./application/useCases/tracks/ListArtistTracksUseCase";
 import { RetireTrackUseCase } from "./application/useCases/tracks/RetireTrackUseCase";
 import { UpdateTrackUseCase } from "./application/useCases/tracks/UpdateTrackUseCase";
+import { CatalogEventOutbox } from "./infrastructure/messaging/CatalogEventOutbox";
+import { CatalogOutboxProcessor } from "./infrastructure/messaging/CatalogOutboxProcessor";
 import { IdentityPromotionConsumer } from "./infrastructure/messaging/IdentityPromotionConsumer";
 import { GrpcMediaAssetClient } from "./infrastructure/grpc/GrpcMediaAssetClient";
 import { prismaClient } from "./infrastructure/prisma/prismaClient";
@@ -49,6 +53,7 @@ const parseAllowedOrigins = (): string[] => {
 export interface ApplicationContext {
   app: Express;
   identityPromotionConsumer: IdentityPromotionConsumer;
+  catalogOutboxProcessor: CatalogOutboxProcessor;
   catalogPlaybackGrpcServer: import("@grpc/grpc-js").Server;
 }
 
@@ -65,6 +70,7 @@ export const createApplication = (): ApplicationContext => {
   const artistRepository = new PrismaArtistRepository(prismaClient);
   const albumRepository = new PrismaAlbumRepository(prismaClient);
   const trackRepository = new PrismaTrackRepository(prismaClient);
+  const catalogEventOutbox = new CatalogEventOutbox(prismaClient);
   const mediaAssetValidator = new GrpcMediaAssetClient(
     process.env.MEDIA_GRPC_TARGET ?? "media-service:9093",
     {
@@ -78,44 +84,63 @@ export const createApplication = (): ApplicationContext => {
     albumRepository,
     artistRepository,
     authorizationService,
-    mediaAssetValidator
+    mediaAssetValidator,
+    catalogEventOutbox
   );
   const getAlbumByIdUseCase = new GetAlbumByIdUseCase(albumRepository);
   const listAlbumTracksUseCase = new ListAlbumTracksUseCase(albumRepository, trackRepository);
   const updateAlbumUseCase = new UpdateAlbumUseCase(
     albumRepository,
     authorizationService,
-    mediaAssetValidator
+    mediaAssetValidator,
+    catalogEventOutbox
   );
-  const retireAlbumUseCase = new RetireAlbumUseCase(albumRepository, trackRepository, authorizationService);
+  const retireAlbumUseCase = new RetireAlbumUseCase(
+    albumRepository,
+    trackRepository,
+    authorizationService,
+    catalogEventOutbox
+  );
   const listArtistAlbumsUseCase = new ListArtistAlbumsUseCase(albumRepository);
+  const listAdminAlbumsUseCase = new ListAdminAlbumsUseCase(albumRepository, authorizationService);
 
   const createTrackUseCase = new CreateTrackUseCase(
     trackRepository,
     artistRepository,
     albumRepository,
     authorizationService,
-    mediaAssetValidator
+    mediaAssetValidator,
+    catalogEventOutbox
   );
   const getTrackByIdUseCase = new GetTrackByIdUseCase(trackRepository);
   const updateTrackUseCase = new UpdateTrackUseCase(
     trackRepository,
     albumRepository,
     authorizationService,
-    mediaAssetValidator
+    mediaAssetValidator,
+    catalogEventOutbox
   );
-  const retireTrackUseCase = new RetireTrackUseCase(trackRepository, authorizationService);
+  const retireTrackUseCase = new RetireTrackUseCase(
+    trackRepository,
+    authorizationService,
+    catalogEventOutbox
+  );
   const listArtistTracksUseCase = new ListArtistTracksUseCase(trackRepository);
+  const listAdminTracksUseCase = new ListAdminTracksUseCase(trackRepository, authorizationService);
 
   const getArtistByIdUseCase = new GetArtistByIdUseCase(artistRepository);
   const updateArtistProfileUseCase = new UpdateArtistProfileUseCase(
     artistRepository,
     authorizationService,
-    mediaAssetValidator
+    mediaAssetValidator,
+    catalogEventOutbox
   );
 
   const searchCatalogUseCase = new SearchCatalogUseCase(artistRepository, albumRepository, trackRepository);
-  const handleUserPromotedUseCase = new HandleUserPromotedUseCase(artistRepository);
+  const handleUserPromotedUseCase = new HandleUserPromotedUseCase(
+    artistRepository,
+    catalogEventOutbox
+  );
 
   const catalogController = new CatalogController({
     searchCatalogUseCase,
@@ -125,11 +150,13 @@ export const createApplication = (): ApplicationContext => {
     getAlbumByIdUseCase,
     listAlbumTracksUseCase,
     listArtistAlbumsUseCase,
+    listAdminAlbumsUseCase,
     createTrackUseCase,
     updateTrackUseCase,
     retireTrackUseCase,
     getTrackByIdUseCase,
     listArtistTracksUseCase,
+    listAdminTracksUseCase,
     getArtistByIdUseCase,
     updateArtistProfileUseCase
   });
@@ -180,10 +207,16 @@ export const createApplication = (): ApplicationContext => {
     process.env.RABBITMQ_USER_PROMOTED_QUEUE ?? "catalog.user.promoted",
     handleUserPromotedUseCase
   );
+  const catalogOutboxProcessor = new CatalogOutboxProcessor(
+    prismaClient,
+    process.env.RABBITMQ_URL ?? "amqp://guest:guest@localhost:5672",
+    process.env.EVENT_SIGNING_SECRET ?? ""
+  );
 
   return {
     app,
     identityPromotionConsumer,
+    catalogOutboxProcessor,
     catalogPlaybackGrpcServer: createCatalogPlaybackGrpcServer(trackRepository)
   };
 };

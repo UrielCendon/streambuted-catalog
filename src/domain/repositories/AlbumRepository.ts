@@ -14,11 +14,18 @@ export interface UpdateAlbumInput {
   coverAssetId?: string;
 }
 
+export interface AdminAlbumListItem extends Album {
+  artistName: string;
+  trackCount: number;
+}
+
 export interface AlbumRepository {
   create(input: CreateAlbumInput): Promise<Album>;
   findById(albumId: string): Promise<Album | null>;
   update(albumId: string, input: UpdateAlbumInput): Promise<Album>;
   retire(albumId: string): Promise<Album>;
   searchPublishedByTitle(query: string, pagination: Pagination): Promise<Album[]>;
+  countAllForAdmin(includeRetired: boolean): Promise<number>;
+  listAllForAdmin(includeRetired: boolean, pagination: Pagination): Promise<AdminAlbumListItem[]>;
   listByArtist(artistId: string, includeRetired: boolean): Promise<Album[]>;
 }

@@ -1,5 +1,6 @@
 import { Artist } from "../../../domain/entities/Artist";
 import { ArtistRepository } from "../../../domain/repositories/ArtistRepository";
+import { CatalogEventRecorder } from "../../services/CatalogEventRecorder";
 
 export interface UserPromotedEvent {
   eventId?: string;
@@ -13,16 +14,21 @@ export interface UserPromotedEvent {
 }
 
 export class HandleUserPromotedUseCase {
-  constructor(private readonly artistRepository: ArtistRepository) {}
+  constructor(
+    private readonly artistRepository: ArtistRepository,
+    private readonly catalogEventRecorder?: CatalogEventRecorder
+  ) {}
 
   public async execute(event: UserPromotedEvent): Promise<Artist> {
     const displayName = this.resolveDisplayName(event);
-    return this.artistRepository.upsertPromotedArtist({
+    const artist = await this.artistRepository.upsertPromotedArtist({
       artistId: event.userId,
       displayName,
       biography: null,
       profileImageAssetId: event.profileImageAssetId ?? null
     });
+    await this.catalogEventRecorder?.recordArtistSnapshot(artist);
+    return artist;
   }
 
   private resolveDisplayName(event: UserPromotedEvent): string {

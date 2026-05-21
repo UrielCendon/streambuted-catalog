@@ -2,6 +2,7 @@ import { CatalogStatus as PrismaCatalogStatus, PrismaClient } from "@prisma/clie
 import { Track } from "../../domain/entities/Track";
 import { CatalogStatus } from "../../domain/enums/CatalogStatus";
 import {
+  AdminTrackListItem,
   CreateTrackInput,
   TrackRepository,
   UpdateTrackInput
@@ -38,6 +39,15 @@ const mapTrack = (track: {
   status: toDomainStatus(track.status),
   createdAt: track.createdAt,
   updatedAt: track.updatedAt
+});
+
+const mapAdminTrack = (track: Parameters<typeof mapTrack>[0] & {
+  artist: { displayName: string };
+  album: { title: string } | null;
+}): AdminTrackListItem => ({
+  ...mapTrack(track),
+  artistName: track.artist.displayName,
+  albumTitle: track.album?.title ?? null
 });
 
 export class PrismaTrackRepository implements TrackRepository {
@@ -131,6 +141,33 @@ export class PrismaTrackRepository implements TrackRepository {
     });
 
     return tracks.map(mapTrack);
+  }
+
+  public async countAllForAdmin(includeRetired: boolean): Promise<number> {
+    return this.prisma.track.count({
+      where: includeRetired ? {} : { status: PRISMA_STATUS_PUBLICADO }
+    });
+  }
+
+  public async listAllForAdmin(includeRetired: boolean, pagination: Pagination): Promise<AdminTrackListItem[]> {
+    const tracks = await this.prisma.track.findMany({
+      where: includeRetired ? {} : { status: PRISMA_STATUS_PUBLICADO },
+      include: {
+        artist: {
+          select: { displayName: true }
+        },
+        album: {
+          select: { title: true }
+        }
+      },
+      orderBy: {
+        createdAt: "desc"
+      },
+      take: pagination.limit,
+      skip: pagination.offset
+    });
+
+    return tracks.map(mapAdminTrack);
   }
 
   public async listByArtist(artistId: string, includeRetired: boolean): Promise<Track[]> {

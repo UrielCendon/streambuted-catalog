@@ -2,6 +2,12 @@ import { AuthenticatedUser } from "../auth/AuthenticatedUser";
 import { AppError } from "../errors/AppError";
 
 export class AuthorizationService {
+  public assertAdminRole(user: AuthenticatedUser): void {
+    if (this.normalizeRole(user.role) !== "ADMIN") {
+      throw new AppError(403, "Forbidden", "Only users with role ADMIN can perform this action.");
+    }
+  }
+
   public assertArtistRole(user: AuthenticatedUser): void {
     if (this.normalizeRole(user.role) !== "ARTIST") {
       throw new AppError(403, "Forbidden", "Only users with role ARTIST can publish or edit catalog content.");
@@ -17,6 +23,14 @@ export class AuthorizationService {
   public assertArtistOwnership(user: AuthenticatedUser, artistId: string): void {
     this.assertArtistRole(user);
     this.assertOwnership(user, artistId);
+  }
+
+  public assertArtistOwnershipOrAdmin(user: AuthenticatedUser, artistId: string): void {
+    if (this.normalizeRole(user.role) === "ADMIN") {
+      return;
+    }
+
+    this.assertArtistOwnership(user, artistId);
   }
 
   private normalizeRole(role: string): string {

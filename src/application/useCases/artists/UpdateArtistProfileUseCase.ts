@@ -5,6 +5,7 @@ import {
   assertMediaAssetMatches,
   MediaAssetValidator
 } from "../../services/MediaAssetValidator";
+import { CatalogEventRecorder } from "../../services/CatalogEventRecorder";
 import { Artist } from "../../../domain/entities/Artist";
 import { ArtistRepository, UpdateArtistInput } from "../../../domain/repositories/ArtistRepository";
 
@@ -12,7 +13,8 @@ export class UpdateArtistProfileUseCase {
   constructor(
     private readonly artistRepository: ArtistRepository,
     private readonly authorizationService: AuthorizationService,
-    private readonly mediaAssetValidator?: MediaAssetValidator
+    private readonly mediaAssetValidator?: MediaAssetValidator,
+    private readonly catalogEventRecorder?: CatalogEventRecorder
   ) {}
 
   public async execute(artistId: string, input: UpdateArtistInput, user: AuthenticatedUser): Promise<Artist> {
@@ -37,6 +39,8 @@ export class UpdateArtistProfileUseCase {
       );
     }
 
-    return this.artistRepository.updateProfile(artistId, input);
+    const updatedArtist = await this.artistRepository.updateProfile(artistId, input);
+    await this.catalogEventRecorder?.recordArtistSnapshot(updatedArtist);
+    return updatedArtist;
   }
 }
