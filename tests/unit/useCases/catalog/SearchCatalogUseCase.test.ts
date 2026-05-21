@@ -28,6 +28,8 @@ describe("SearchCatalogUseCase", () => {
       findById: jest.fn(),
       update: jest.fn(),
       retire: jest.fn(),
+      countAllForAdmin: jest.fn(),
+      listAllForAdmin: jest.fn(),
       searchPublishedByTitle: jest.fn().mockResolvedValue([
         {
           albumId: "332f5690-e5ab-4d4a-8f9b-db9eb49e25d9",
@@ -64,6 +66,8 @@ describe("SearchCatalogUseCase", () => {
         }
       ]),
       listByArtist: jest.fn(),
+      countAllForAdmin: jest.fn(),
+      listAllForAdmin: jest.fn(),
       listPublishedByAlbum: jest.fn()
     };
 
