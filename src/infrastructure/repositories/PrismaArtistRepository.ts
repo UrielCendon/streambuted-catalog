@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 import { Artist } from "../../domain/entities/Artist";
 import {
   ArtistRepository,
@@ -89,19 +89,20 @@ export class PrismaArtistRepository implements ArtistRepository {
   }
 
   public async searchByDisplayName(query: string, pagination: Pagination): Promise<Artist[]> {
-    const artists = await this.prisma.artist.findMany({
-      where: {
-        displayName: {
-          contains: query,
-          mode: "insensitive"
-        }
-      },
-      orderBy: {
-        displayName: "asc"
-      },
-      take: pagination.limit,
-      skip: pagination.offset
-    });
+    const artists = await this.prisma.$queryRaw<Array<Parameters<typeof mapArtist>[0]>>(Prisma.sql`
+      SELECT
+        artist_id AS "artistId",
+        display_name AS "displayName",
+        biography,
+        profile_image_asset_id AS "profileImageAssetId",
+        created_at AS "createdAt",
+        updated_at AS "updatedAt"
+      FROM artist
+      WHERE unaccent(lower(display_name)) LIKE '%' || unaccent(lower(${query})) || '%'
+      ORDER BY display_name ASC
+      LIMIT ${pagination.limit}
+      OFFSET ${pagination.offset}
+    `);
 
     return artists.map(mapArtist);
   }

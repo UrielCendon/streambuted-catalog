@@ -1,4 +1,4 @@
-import { CatalogStatus as PrismaCatalogStatus, PrismaClient } from "@prisma/client";
+import { CatalogStatus as PrismaCatalogStatus, Prisma, PrismaClient } from "@prisma/client";
 import { Track } from "../../domain/entities/Track";
 import { CatalogStatus } from "../../domain/enums/CatalogStatus";
 import {
@@ -115,30 +115,29 @@ export class PrismaTrackRepository implements TrackRepository {
   }
 
   public async searchPublishedByTitle(query: string, pagination: Pagination): Promise<Track[]> {
-    const tracks = await this.prisma.track.findMany({
-      where: {
-        status: PRISMA_STATUS_PUBLICADO,
-        OR: [
-          {
-            title: {
-              contains: query,
-              mode: "insensitive"
-            }
-          },
-          {
-            genre: {
-              contains: query,
-              mode: "insensitive"
-            }
-          }
-        ]
-      },
-      orderBy: {
-        title: "asc"
-      },
-      take: pagination.limit,
-      skip: pagination.offset
-    });
+    const tracks = await this.prisma.$queryRaw<Array<Parameters<typeof mapTrack>[0]>>(Prisma.sql`
+      SELECT
+        track_id AS "trackId",
+        artist_id AS "artistId",
+        album_id AS "albumId",
+        title,
+        genre,
+        audio_asset_id AS "audioAssetId",
+        cover_asset_id AS "coverAssetId",
+        duration_seconds AS "durationSeconds",
+        status,
+        created_at AS "createdAt",
+        updated_at AS "updatedAt"
+      FROM track
+      WHERE status = ${PRISMA_STATUS_PUBLICADO}::"CatalogStatus"
+        AND (
+          unaccent(lower(title)) LIKE '%' || unaccent(lower(${query})) || '%'
+          OR unaccent(lower(genre)) LIKE '%' || unaccent(lower(${query})) || '%'
+        )
+      ORDER BY title ASC
+      LIMIT ${pagination.limit}
+      OFFSET ${pagination.offset}
+    `);
 
     return tracks.map(mapTrack);
   }

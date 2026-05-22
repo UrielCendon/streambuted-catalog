@@ -1,4 +1,4 @@
-import { CatalogStatus as PrismaCatalogStatus, PrismaClient } from "@prisma/client";
+import { CatalogStatus as PrismaCatalogStatus, Prisma, PrismaClient } from "@prisma/client";
 import { Album } from "../../domain/entities/Album";
 import { CatalogStatus } from "../../domain/enums/CatalogStatus";
 import {
@@ -90,20 +90,22 @@ export class PrismaAlbumRepository implements AlbumRepository {
   }
 
   public async searchPublishedByTitle(query: string, pagination: Pagination): Promise<Album[]> {
-    const albums = await this.prisma.album.findMany({
-      where: {
-        status: PRISMA_STATUS_PUBLICADO,
-        title: {
-          contains: query,
-          mode: "insensitive"
-        }
-      },
-      orderBy: {
-        title: "asc"
-      },
-      take: pagination.limit,
-      skip: pagination.offset
-    });
+    const albums = await this.prisma.$queryRaw<Array<Parameters<typeof mapAlbum>[0]>>(Prisma.sql`
+      SELECT
+        album_id AS "albumId",
+        artist_id AS "artistId",
+        title,
+        cover_asset_id AS "coverAssetId",
+        status,
+        created_at AS "createdAt",
+        updated_at AS "updatedAt"
+      FROM album
+      WHERE status = ${PRISMA_STATUS_PUBLICADO}::"CatalogStatus"
+        AND unaccent(lower(title)) LIKE '%' || unaccent(lower(${query})) || '%'
+      ORDER BY title ASC
+      LIMIT ${pagination.limit}
+      OFFSET ${pagination.offset}
+    `);
 
     return albums.map(mapAlbum);
   }

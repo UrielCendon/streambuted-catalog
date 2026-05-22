@@ -1,4 +1,4 @@
-import { NextFunction, Request, Response } from "express";
+import { NextFunction, Request, Response as ExpressResponse } from "express";
 import jwt, { JwtHeader, JwtPayload } from "jsonwebtoken";
 import jwksRsa from "jwks-rsa";
 import { AppError } from "../../../application/errors/AppError";
@@ -8,11 +8,27 @@ interface CatalogJwtPayload extends JwtPayload {
   role: string;
 }
 
+interface AccountBannedPayload {
+  error?: string;
+  code?: string;
+  message?: string;
+  banType?: "TEMPORARY" | "PERMANENT";
+  bannedUntil?: string | null;
+  remainingSeconds?: number;
+}
+
+interface IdentityAccountStatusClient {
+  validateAuthorizationHeader(authorizationHeader: string): Promise<void>;
+}
+
 const RESOURCE_CHANGED_MESSAGE =
   "El recurso original ha cambiado. Vuelve a iniciar sesión e inténtalo de nuevo.";
 
 const JWKS_UNAVAILABLE_MESSAGE =
   "El servicio de autenticación no está disponible temporalmente. Inténtalo de nuevo más tarde.";
+
+const ACCOUNT_BANNED_MESSAGE =
+  "La cuenta se encuentra suspendida.";
 
 type ErrorLike = {
   name?: unknown;
@@ -159,8 +175,77 @@ const normalizeRole = (role: string): string => {
   return normalizedRole;
 };
 
+const isObject = (value: unknown): value is Record<string, unknown> => {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+};
+
+const isAccountBannedPayload = (value: unknown): value is AccountBannedPayload => {
+  if (!isObject(value)) {
+    return false;
+  }
+
+  return value.code === "ACCOUNT_BANNED" || value.error === "AccountBannedException";
+};
+
+const parseJsonSafely = async (response: globalThis.Response): Promise<unknown> => {
+  try {
+    return await response.json();
+  } catch {
+    return null;
+  }
+};
+
+const createIdentityAccountStatusClient = (identityBaseUrl: string): IdentityAccountStatusClient => {
+  const normalizedBaseUrl = identityBaseUrl.replace(/\/$/, "");
+
+  return {
+    async validateAuthorizationHeader(authorizationHeader: string): Promise<void> {
+      let response: globalThis.Response;
+
+      try {
+        response = await fetch(`${normalizedBaseUrl}/api/v1/auth/validate`, {
+          method: "GET",
+          headers: {
+            Authorization: authorizationHeader,
+          },
+        });
+      } catch {
+        throw new AppError(503, "ServiceUnavailable", JWKS_UNAVAILABLE_MESSAGE);
+      }
+
+      if (response.ok) {
+        return;
+      }
+
+      const payload = await parseJsonSafely(response);
+      if (response.status === 403 && isAccountBannedPayload(payload)) {
+        throw new AppError(
+          403,
+          "AccountBannedException",
+          typeof payload.message === "string" && payload.message.trim()
+            ? payload.message
+            : ACCOUNT_BANNED_MESSAGE,
+          payload
+        );
+      }
+
+      if (response.status === 401) {
+        throw new AppError(401, "Unauthorized", "Invalid or expired JWT token.");
+      }
+
+      throw new AppError(503, "ServiceUnavailable", JWKS_UNAVAILABLE_MESSAGE);
+    }
+  };
+};
+
 export const createAuthenticationMiddleware =
-  (options: { jwksUrl: string; issuer?: string; audience?: string }) => {
+  (options: {
+    jwksUrl: string;
+    issuer?: string;
+    audience?: string;
+    identityBaseUrl?: string;
+    accountStatusClient?: IdentityAccountStatusClient;
+  }) => {
     const jwksUrl = options.jwksUrl?.trim();
     if (!jwksUrl) {
       throw new Error("Invalid JWT_JWKS_URL: must be a non-empty URL.");
@@ -174,6 +259,14 @@ export const createAuthenticationMiddleware =
     } catch {
       throw new Error("Invalid JWT_JWKS_URL: must be a valid absolute URL.");
     }
+
+    const identityBaseUrl = options.identityBaseUrl?.trim() || options.issuer?.trim() || "";
+    if (!options.accountStatusClient && !identityBaseUrl) {
+      throw new Error("Invalid identity base URL: must be configured.");
+    }
+
+    const accountStatusClient = options.accountStatusClient
+      ?? createIdentityAccountStatusClient(identityBaseUrl);
 
     // JWKS client with caching + basic rate limiting.
     const jwksClient = jwksRsa({
@@ -206,7 +299,7 @@ export const createAuthenticationMiddleware =
       });
     };
 
-    return (request: Request, _response: Response, next: NextFunction): void => {
+    return (request: Request, _response: ExpressResponse, next: NextFunction): void => {
       const token = getBearerToken(request.headers.authorization);
       if (!token) {
         next(new AppError(401, "Unauthorized", "Missing or invalid Authorization header."));
@@ -250,13 +343,20 @@ export const createAuthenticationMiddleware =
             return;
           }
 
-          request.authenticatedUser = {
-            subject: decoded.sub.trim(),
-            role: normalizedRole,
-            authorizationHeader: request.headers.authorization
-          };
+          accountStatusClient
+            .validateAuthorizationHeader(request.headers.authorization as string)
+            .then(() => {
+              request.authenticatedUser = {
+                subject: decoded.sub.trim(),
+                role: normalizedRole,
+                authorizationHeader: request.headers.authorization
+              };
 
-          next();
+              next();
+            })
+            .catch((statusError: unknown) => {
+              next(statusError);
+            });
         }
       );
     };

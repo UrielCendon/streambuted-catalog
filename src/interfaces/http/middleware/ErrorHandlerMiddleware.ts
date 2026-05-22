@@ -2,6 +2,14 @@ import { NextFunction, Request, Response } from "express";
 import { AppError } from "../../../application/errors/AppError";
 import { logger } from "../../../infrastructure/logging/logger";
 
+const flattenDetails = (details: unknown): Record<string, unknown> => {
+  if (!details || typeof details !== "object" || Array.isArray(details)) {
+    return {};
+  }
+
+  return details as Record<string, unknown>;
+};
+
 export const notFoundMiddleware = (_request: Request, _response: Response, next: NextFunction): void => {
   next(new AppError(404, "NotFound", "Route not found."));
 };
@@ -28,6 +36,7 @@ export const errorHandlerMiddleware = (
 
     response.status(error.statusCode).json({
       error: error.code,
+      ...flattenDetails(error.details),
       message: error.message,
       statusCode: error.statusCode,
       details: error.details ?? null,
