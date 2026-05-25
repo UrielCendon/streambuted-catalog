@@ -21,7 +21,8 @@ describe("CreateTrackUseCase", () => {
       listByArtist: jest.fn(),
       countAllForAdmin: jest.fn(),
       listAllForAdmin: jest.fn(),
-      listPublishedByAlbum: jest.fn()
+      listPublishedByAlbum: jest.fn(),
+      listPublishedByIds: jest.fn()
     };
 
     const artistRepository: jest.Mocked<ArtistRepository> = {

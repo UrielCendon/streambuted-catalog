@@ -7,6 +7,7 @@ import {
   albumIdParamSchema,
   artistIdParamSchema,
   createAlbumSchema,
+  batchTrackIdsSchema,
   createTrackInAlbumSchema,
   createTrackSchema,
   searchCatalogSchema,
@@ -74,6 +75,7 @@ export const buildCatalogRouter = (
     catalogController.createTrackInAlbum
   );
 
+  router.post("/tracks/batch", validateRequest(batchTrackIdsSchema), catalogController.listPublishedTracksByIds);
   router.get("/tracks/:trackId", validateRequest(trackIdParamSchema), catalogController.getTrackById);
   router.post("/tracks", authenticationMiddleware, validateRequest(createTrackSchema), catalogController.createTrack);
   router.patch(

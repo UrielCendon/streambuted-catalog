@@ -27,6 +27,11 @@ export interface AdminTrackListItem extends Track {
   albumTitle: string | null;
 }
 
+export interface PublishedTrackListItem extends Track {
+  artistName: string;
+  albumTitle: string | null;
+}
+
 export interface TrackRepository {
   create(input: CreateTrackInput): Promise<Track>;
   findById(trackId: string): Promise<Track | null>;
@@ -38,4 +43,5 @@ export interface TrackRepository {
   listAllForAdmin(includeRetired: boolean, pagination: Pagination): Promise<AdminTrackListItem[]>;
   listByArtist(artistId: string, includeRetired: boolean): Promise<Track[]>;
   listPublishedByAlbum(albumId: string): Promise<Track[]>;
+  listPublishedByIds(trackIds: string[]): Promise<PublishedTrackListItem[]>;
 }

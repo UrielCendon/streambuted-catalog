@@ -4,6 +4,7 @@ import { CatalogStatus } from "../../domain/enums/CatalogStatus";
 import {
   AdminTrackListItem,
   CreateTrackInput,
+  PublishedTrackListItem,
   TrackRepository,
   UpdateTrackInput
 } from "../../domain/repositories/TrackRepository";
@@ -45,6 +46,15 @@ const mapAdminTrack = (track: Parameters<typeof mapTrack>[0] & {
   artist: { displayName: string };
   album: { title: string } | null;
 }): AdminTrackListItem => ({
+  ...mapTrack(track),
+  artistName: track.artist.displayName,
+  albumTitle: track.album?.title ?? null
+});
+
+const mapPublishedTrack = (track: Parameters<typeof mapTrack>[0] & {
+  artist: { displayName: string };
+  album: { title: string } | null;
+}): PublishedTrackListItem => ({
   ...mapTrack(track),
   artistName: track.artist.displayName,
   albumTitle: track.album?.title ?? null
@@ -195,5 +205,31 @@ export class PrismaTrackRepository implements TrackRepository {
     });
 
     return tracks.map(mapTrack);
+  }
+
+  public async listPublishedByIds(trackIds: string[]): Promise<PublishedTrackListItem[]> {
+    if (trackIds.length === 0) {
+      return [];
+    }
+
+    const tracks = await this.prisma.track.findMany({
+      where: {
+        trackId: { in: trackIds },
+        status: PRISMA_STATUS_PUBLICADO
+      },
+      include: {
+        artist: {
+          select: { displayName: true }
+        },
+        album: {
+          select: { title: true }
+        }
+      }
+    });
+
+    const trackById = new Map(tracks.map((track) => [track.trackId, mapPublishedTrack(track)]));
+    return trackIds
+      .map((trackId) => trackById.get(trackId))
+      .filter((track): track is PublishedTrackListItem => Boolean(track));
   }
 }

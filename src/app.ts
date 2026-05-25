@@ -19,6 +19,7 @@ import { CreateTrackUseCase } from "./application/useCases/tracks/CreateTrackUse
 import { GetTrackByIdUseCase } from "./application/useCases/tracks/GetTrackByIdUseCase";
 import { ListAdminTracksUseCase } from "./application/useCases/tracks/ListAdminTracksUseCase";
 import { ListArtistTracksUseCase } from "./application/useCases/tracks/ListArtistTracksUseCase";
+import { ListPublishedTracksByIdsUseCase } from "./application/useCases/tracks/ListPublishedTracksByIdsUseCase";
 import { RetireTrackUseCase } from "./application/useCases/tracks/RetireTrackUseCase";
 import { UpdateTrackUseCase } from "./application/useCases/tracks/UpdateTrackUseCase";
 import { CatalogEventOutbox } from "./infrastructure/messaging/CatalogEventOutbox";
@@ -114,6 +115,7 @@ export const createApplication = (): ApplicationContext => {
     catalogEventOutbox
   );
   const getTrackByIdUseCase = new GetTrackByIdUseCase(trackRepository);
+  const listPublishedTracksByIdsUseCase = new ListPublishedTracksByIdsUseCase(trackRepository);
   const updateTrackUseCase = new UpdateTrackUseCase(
     trackRepository,
     albumRepository,
@@ -158,6 +160,7 @@ export const createApplication = (): ApplicationContext => {
     getTrackByIdUseCase,
     listArtistTracksUseCase,
     listAdminTracksUseCase,
+    listPublishedTracksByIdsUseCase,
     getArtistByIdUseCase,
     updateArtistProfileUseCase
   });

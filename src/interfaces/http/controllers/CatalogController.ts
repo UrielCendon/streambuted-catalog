@@ -13,6 +13,7 @@ import { CreateTrackUseCase } from "../../../application/useCases/tracks/CreateT
 import { GetTrackByIdUseCase } from "../../../application/useCases/tracks/GetTrackByIdUseCase";
 import { ListAdminTracksUseCase } from "../../../application/useCases/tracks/ListAdminTracksUseCase";
 import { ListArtistTracksUseCase } from "../../../application/useCases/tracks/ListArtistTracksUseCase";
+import { ListPublishedTracksByIdsUseCase } from "../../../application/useCases/tracks/ListPublishedTracksByIdsUseCase";
 import { RetireTrackUseCase } from "../../../application/useCases/tracks/RetireTrackUseCase";
 import { UpdateTrackUseCase } from "../../../application/useCases/tracks/UpdateTrackUseCase";
 import { AppError } from "../../../application/errors/AppError";
@@ -35,6 +36,7 @@ interface CatalogControllerDependencies {
   getTrackByIdUseCase: GetTrackByIdUseCase;
   listArtistTracksUseCase: ListArtistTracksUseCase;
   listAdminTracksUseCase: ListAdminTracksUseCase;
+  listPublishedTracksByIdsUseCase: ListPublishedTracksByIdsUseCase;
   getArtistByIdUseCase: GetArtistByIdUseCase;
   updateArtistProfileUseCase: UpdateArtistProfileUseCase;
 }
@@ -260,6 +262,17 @@ export class CatalogController {
     try {
       const track = await this.dependencies.getTrackByIdUseCase.execute(request.params.trackId);
       response.status(200).json(track);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  public listPublishedTracksByIds = async (request: Request, response: Response, next: NextFunction): Promise<void> => {
+    try {
+      const tracks = await this.dependencies.listPublishedTracksByIdsUseCase.execute(request.body.trackIds);
+      response.status(200).json({
+        tracks
+      });
     } catch (error) {
       next(error);
     }

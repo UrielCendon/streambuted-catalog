@@ -225,6 +225,14 @@ export const trackIdParamSchema = z.object({
   body: z.object({}).passthrough()
 });
 
+export const batchTrackIdsSchema = z.object({
+  params: z.object({}).passthrough(),
+  query: z.object({}).passthrough(),
+  body: z.object({
+    trackIds: z.array(uuidSchema).min(1).max(100)
+  })
+});
+
 export const createTrackSchema = z.object({
   params: z.object({}).passthrough(),
   query: z.object({}).passthrough(),

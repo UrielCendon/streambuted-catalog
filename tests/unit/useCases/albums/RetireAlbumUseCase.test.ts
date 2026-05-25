@@ -27,7 +27,8 @@ describe("RetireAlbumUseCase", () => {
       listByArtist: jest.fn(),
       countAllForAdmin: jest.fn(),
       listAllForAdmin: jest.fn(),
-      listPublishedByAlbum: jest.fn()
+      listPublishedByAlbum: jest.fn(),
+      listPublishedByIds: jest.fn()
     };
 
     const useCase = new RetireAlbumUseCase(albumRepository, trackRepository, new AuthorizationService());
