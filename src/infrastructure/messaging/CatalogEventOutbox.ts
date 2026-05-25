@@ -38,6 +38,7 @@ export class CatalogEventOutbox implements CatalogEventRecorder {
         albumId: album.albumId,
         artistId: album.artistId,
         title: album.title,
+        coverAssetId: album.coverAssetId,
         status: album.status,
         occurredAt: new Date().toISOString()
       }

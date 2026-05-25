@@ -46,12 +46,12 @@ export class CatalogController {
 
   public searchCatalog = async (request: Request, response: Response, next: NextFunction): Promise<void> => {
     try {
-      const query = request.query.q as string;
+      const searchTerm = request.query.searchTerm as string;
       const limit = Number(request.query.limit ?? 20);
       const offset = Number(request.query.offset ?? 0);
 
       const result = await this.dependencies.searchCatalogUseCase.execute({
-        query,
+        searchTerm,
         limit,
         offset
       });

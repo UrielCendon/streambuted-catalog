@@ -6,7 +6,7 @@ import { ArtistRepository } from "../../../domain/repositories/ArtistRepository"
 import { TrackRepository } from "../../../domain/repositories/TrackRepository";
 
 export interface SearchCatalogQuery {
-  query: string;
+  searchTerm: string;
   limit: number;
   offset: number;
 }
@@ -28,9 +28,9 @@ export class SearchCatalogUseCase {
     const pagination = { limit: searchQuery.limit, offset: searchQuery.offset };
 
     const [artists, albums, tracks] = await Promise.all([
-      this.artistRepository.searchByDisplayName(searchQuery.query, pagination),
-      this.albumRepository.searchPublishedByTitle(searchQuery.query, pagination),
-      this.trackRepository.searchPublishedByTitle(searchQuery.query, pagination)
+      this.artistRepository.searchByDisplayName(searchQuery.searchTerm, pagination),
+      this.albumRepository.searchPublishedByTitle(searchQuery.searchTerm, pagination),
+      this.trackRepository.searchPublishedByTitle(searchQuery.searchTerm, pagination)
     ]);
 
     return { artists, albums, tracks };

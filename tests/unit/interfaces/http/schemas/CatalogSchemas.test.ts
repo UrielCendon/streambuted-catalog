@@ -2,6 +2,7 @@ import {
   createAlbumSchema,
   createTrackInAlbumSchema,
   createTrackSchema,
+  searchCatalogSchema,
   updateTrackSchema
 } from "../../../../../src/interfaces/http/schemas/CatalogSchemas";
 
@@ -100,5 +101,55 @@ describe("CatalogSchemas", () => {
         durationSeconds: undefined
       });
     }
+  });
+
+  it("normalizes searchTerm and keeps q as a compatibility alias", () => {
+    const preferred = searchCatalogSchema.safeParse({
+      params: {},
+      query: { searchTerm: " az ", limit: "20", offset: "0" },
+      body: {}
+    });
+    const legacy = searchCatalogSchema.safeParse({
+      params: {},
+      query: { q: "az" },
+      body: {}
+    });
+
+    expect(preferred.success).toBe(true);
+    expect(legacy.success).toBe(true);
+    if (preferred.success) {
+      expect(preferred.data.query.searchTerm).toBe("az");
+    }
+    if (legacy.success) {
+      expect(legacy.data.query.searchTerm).toBe("az");
+    }
+  });
+
+  it("rejects catalog names and search terms longer than 100 characters", () => {
+    const tooLong = "x".repeat(101);
+
+    expect(createAlbumSchema.safeParse({
+      params: {},
+      query: {},
+      body: {
+        title: tooLong,
+        coverAssetId: "f4a4bde9-f5be-414e-bb37-6c546c08231f"
+      }
+    }).success).toBe(false);
+    expect(createTrackSchema.safeParse({
+      params: {},
+      query: {},
+      body: {
+        title: tooLong,
+        genre: "Rock",
+        audioAssetId: "6dd6f07f-fc96-4f9b-ab08-8444f8519758",
+        coverAssetId: "f4a4bde9-f5be-414e-bb37-6c546c08231f"
+      }
+    }).success).toBe(false);
+    expect(searchCatalogSchema.safeParse({
+      params: {},
+      query: { searchTerm: tooLong },
+      body: {}
+    }).success).toBe(false);
   });
 });

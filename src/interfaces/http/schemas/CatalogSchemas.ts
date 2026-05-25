@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 const uuidSchema = z.string().uuid();
+const catalogNameSchema = z.string().trim().min(1).max(100);
 const genreSchema = z.string().trim().min(1).max(80);
 const durationSecondsSchema = z.number().finite().positive().nullable();
 const optionalBooleanQuerySchema = z.preprocess((value) => {
@@ -29,9 +30,9 @@ const firstDefined = <T extends Record<string, unknown>>(value: T, firstKey: key
 
 const createArtistProfileBodySchema = z
   .object({
-    displayName: z.string().trim().min(1).max(120).optional(),
-    display_name: z.string().trim().min(1).max(120).optional(),
-    biography: z.string().trim().max(4000).nullable().optional(),
+    displayName: catalogNameSchema.optional(),
+    display_name: catalogNameSchema.optional(),
+    biography: z.string().trim().max(1000).nullable().optional(),
     profileImageAssetId: uuidSchema.nullable().optional(),
     profile_image_asset_id: uuidSchema.nullable().optional()
   })
@@ -46,7 +47,7 @@ const createArtistProfileBodySchema = z
 
 const createAlbumBodySchema = z
   .object({
-    title: z.string().trim().min(1).max(220),
+    title: catalogNameSchema,
     coverAssetId: uuidSchema.optional(),
     cover_asset_id: uuidSchema.optional()
   })
@@ -60,7 +61,7 @@ const createAlbumBodySchema = z
 
 const updateAlbumBodySchema = z
   .object({
-    title: z.string().trim().min(1).max(220).optional(),
+    title: catalogNameSchema.optional(),
     coverAssetId: uuidSchema.optional(),
     cover_asset_id: uuidSchema.optional()
   })
@@ -76,7 +77,7 @@ const createTrackBodySchema = z
   .object({
     albumId: uuidSchema.nullable().optional(),
     album_id: uuidSchema.nullable().optional(),
-    title: z.string().trim().min(1).max(220),
+    title: catalogNameSchema,
     genre: genreSchema.optional(),
     genero: genreSchema.optional(),
     audioAssetId: uuidSchema.optional(),
@@ -106,7 +107,7 @@ const createTrackBodySchema = z
 
 const createTrackInAlbumBodySchema = z
   .object({
-    title: z.string().trim().min(1).max(220),
+    title: catalogNameSchema,
     genre: genreSchema.optional(),
     genero: genreSchema.optional(),
     audioAssetId: uuidSchema.optional(),
@@ -137,7 +138,7 @@ const updateTrackBodySchema = z
   .object({
     albumId: uuidSchema.nullable().optional(),
     album_id: uuidSchema.nullable().optional(),
-    title: z.string().trim().min(1).max(220).optional(),
+    title: catalogNameSchema.optional(),
     genre: genreSchema.optional(),
     genero: genreSchema.optional(),
     audioAssetId: uuidSchema.optional(),
@@ -161,11 +162,21 @@ const updateTrackBodySchema = z
 
 export const searchCatalogSchema = z.object({
   params: z.object({}).passthrough(),
-  query: z.object({
-    q: z.string().trim().min(1),
+  query: z
+    .object({
+    searchTerm: z.string().trim().min(1).max(100).optional(),
+    q: z.string().trim().min(1).max(100).optional(),
     limit: z.coerce.number().int().min(1).max(100).default(20),
     offset: z.coerce.number().int().min(0).default(0)
-  }),
+  })
+    .refine((value) => value.searchTerm !== undefined || value.q !== undefined, {
+      message: "searchTerm is required."
+    })
+    .transform((value) => ({
+      searchTerm: value.searchTerm ?? value.q,
+      limit: value.limit,
+      offset: value.offset
+    })),
   body: z.object({}).passthrough()
 });
 

@@ -73,7 +73,7 @@ describe("SearchCatalogUseCase", () => {
     };
 
     const useCase = new SearchCatalogUseCase(artistRepository, albumRepository, trackRepository);
-    const result = await useCase.execute({ query: "night", limit: 20, offset: 0 });
+    const result = await useCase.execute({ searchTerm: "night", limit: 20, offset: 0 });
 
     expect(result.artists).toHaveLength(1);
     expect(result.albums[0].status).toBe(CatalogStatus.Publicado);
