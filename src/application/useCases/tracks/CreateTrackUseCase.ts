@@ -37,17 +37,17 @@ export class CreateTrackUseCase {
 
     const artistExists = await this.artistRepository.existsById(command.artistId);
     if (!artistExists) {
-      throw new AppError(404, "ArtistNotFound", "Artist not found.");
+      throw new AppError(404, "ArtistNotFound", "El perfil de artista no existe.");
     }
 
     if (command.albumId) {
       const album = await this.albumRepository.findById(command.albumId);
       if (!album) {
-        throw new AppError(404, "AlbumNotFound", "Album not found.");
+        throw new AppError(404, "AlbumNotFound", "El album no existe o ya no esta disponible.");
       }
 
       if (album.artistId !== command.artistId) {
-        throw new AppError(400, "ValidationError", "The album does not belong to the specified artist.");
+        throw new AppError(400, "ValidationError", "El album no pertenece al artista indicado.");
       }
     }
 

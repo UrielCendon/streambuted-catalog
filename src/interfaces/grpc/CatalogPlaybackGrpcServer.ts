@@ -44,7 +44,7 @@ export class CatalogPlaybackGrpcService {
     if (!trackId) {
       callback({
         code: grpc.status.INVALID_ARGUMENT,
-        message: "track_id is required."
+        message: "track_id es obligatorio."
       });
       return;
     }
@@ -54,7 +54,7 @@ export class CatalogPlaybackGrpcService {
       if (!track) {
         callback({
           code: grpc.status.NOT_FOUND,
-          message: "Track not found."
+          message: "La pista no existe o ya no esta disponible."
         });
         return;
       }
@@ -69,7 +69,7 @@ export class CatalogPlaybackGrpcService {
     } catch (error) {
       callback({
         code: grpc.status.INTERNAL,
-        message: error instanceof Error ? error.message : "Catalog lookup failed."
+        message: error instanceof Error ? error.message : "No se pudo consultar el catalogo."
       });
     }
   };

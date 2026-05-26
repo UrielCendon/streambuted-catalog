@@ -22,11 +22,11 @@ export class UpdateArtistProfileUseCase {
 
     const artistExists = await this.artistRepository.existsById(artistId);
     if (!artistExists) {
-      throw new AppError(404, "ArtistNotFound", "Artist not found.");
+      throw new AppError(404, "ArtistNotFound", "El perfil de artista no existe.");
     }
 
     if (!input.displayName && input.biography === undefined && input.profileImageAssetId === undefined) {
-      throw new AppError(400, "ValidationError", "At least one artist profile field must be provided.");
+      throw new AppError(400, "ValidationError", "Debes enviar al menos un campo del perfil de artista.");
     }
 
     if (input.profileImageAssetId) {

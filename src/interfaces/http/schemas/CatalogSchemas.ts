@@ -42,7 +42,7 @@ const createArtistProfileBodySchema = z
     profileImageAssetId: firstDefined(value, "profileImageAssetId", "profile_image_asset_id")
   }))
   .refine((value) => hasAtLeastOneField(value, ["displayName", "biography", "profileImageAssetId"]), {
-    message: "At least one profile field must be provided."
+    message: "Debes enviar al menos un campo del perfil."
   });
 
 const createAlbumBodySchema = z
@@ -52,7 +52,7 @@ const createAlbumBodySchema = z
     cover_asset_id: uuidSchema.optional()
   })
   .refine((value) => hasAtLeastOneAlias(value, ["coverAssetId", "cover_asset_id"]), {
-    message: "coverAssetId or cover_asset_id is required."
+    message: "Debes enviar coverAssetId o cover_asset_id."
   })
   .transform((value) => ({
     title: value.title,
@@ -70,7 +70,7 @@ const updateAlbumBodySchema = z
     coverAssetId: value.coverAssetId ?? value.cover_asset_id
   }))
   .refine((value) => hasAtLeastOneField(value, ["title", "coverAssetId"]), {
-    message: "At least one album field must be provided."
+    message: "Debes enviar al menos un campo del album."
   });
 
 const createTrackBodySchema = z
@@ -88,13 +88,13 @@ const createTrackBodySchema = z
     duration_seconds: durationSecondsSchema.optional()
   })
   .refine((value) => hasAtLeastOneAlias(value, ["audioAssetId", "audio_asset_id"]), {
-    message: "audioAssetId or audio_asset_id is required."
+    message: "Debes enviar audioAssetId o audio_asset_id."
   })
   .refine((value) => hasAtLeastOneOf(value, ["genre", "genero"]), {
-    message: "genre or genero is required."
+    message: "Debes enviar genre o genero."
   })
   .refine((value) => hasAtLeastOneAlias(value, ["coverAssetId", "cover_asset_id"]), {
-    message: "coverAssetId or cover_asset_id is required."
+    message: "Debes enviar coverAssetId o cover_asset_id."
   })
   .transform((value) => ({
     albumId: firstDefined(value, "albumId", "album_id"),
@@ -118,13 +118,13 @@ const createTrackInAlbumBodySchema = z
     duration_seconds: durationSecondsSchema.optional()
   })
   .refine((value) => hasAtLeastOneAlias(value, ["audioAssetId", "audio_asset_id"]), {
-    message: "audioAssetId or audio_asset_id is required."
+    message: "Debes enviar audioAssetId o audio_asset_id."
   })
   .refine((value) => hasAtLeastOneOf(value, ["genre", "genero"]), {
-    message: "genre or genero is required."
+    message: "Debes enviar genre o genero."
   })
   .refine((value) => hasAtLeastOneAlias(value, ["coverAssetId", "cover_asset_id"]), {
-    message: "coverAssetId or cover_asset_id is required."
+    message: "Debes enviar coverAssetId o cover_asset_id."
   })
   .transform((value) => ({
     title: value.title,
@@ -157,7 +157,7 @@ const updateTrackBodySchema = z
     durationSeconds: firstDefined(value, "durationSeconds", "duration_seconds")
   }))
   .refine((value) => hasAtLeastOneField(value, ["albumId", "title", "genre", "audioAssetId", "coverAssetId", "durationSeconds"]), {
-    message: "At least one track field must be provided."
+    message: "Debes enviar al menos un campo de la pista."
   });
 
 export const searchCatalogSchema = z.object({
@@ -170,7 +170,7 @@ export const searchCatalogSchema = z.object({
     offset: z.coerce.number().int().min(0).default(0)
   })
     .refine((value) => value.searchTerm !== undefined || value.q !== undefined, {
-      message: "searchTerm is required."
+      message: "Debes enviar searchTerm o q para buscar."
     })
     .transform((value) => ({
       searchTerm: value.searchTerm ?? value.q,

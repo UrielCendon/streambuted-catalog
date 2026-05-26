@@ -16,7 +16,7 @@ export class RetireTrackUseCase {
   public async execute(trackId: string, user: AuthenticatedUser): Promise<Track> {
     const track = await this.trackRepository.findById(trackId);
     if (!track) {
-      throw new AppError(404, "TrackNotFound", "Track not found.");
+      throw new AppError(404, "TrackNotFound", "La pista no existe o ya no esta disponible.");
     }
 
     this.authorizationService.assertArtistOwnershipOrAdmin(user, track.artistId);

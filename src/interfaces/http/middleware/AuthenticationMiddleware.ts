@@ -22,10 +22,10 @@ interface IdentityAccountStatusClient {
 }
 
 const RESOURCE_CHANGED_MESSAGE =
-  "El recurso original ha cambiado. Vuelve a iniciar sesión e inténtalo de nuevo.";
+  "El recurso original ha cambiado. Vuelve a iniciar sesion e intentalo de nuevo.";
 
 const JWKS_UNAVAILABLE_MESSAGE =
-  "El servicio de autenticación no está disponible temporalmente. Inténtalo de nuevo más tarde.";
+  "El servicio de autenticacion no esta disponible temporalmente. Intentalo de nuevo mas tarde.";
 
 const ACCOUNT_BANNED_MESSAGE =
   "La cuenta se encuentra suspendida.";
@@ -230,7 +230,7 @@ const createIdentityAccountStatusClient = (identityBaseUrl: string): IdentityAcc
       }
 
       if (response.status === 401) {
-        throw new AppError(401, "Unauthorized", "Invalid or expired JWT token.");
+        throw new AppError(401, "Unauthorized", "El token JWT es invalido o expiro.");
       }
 
       throw new AppError(503, "ServiceUnavailable", JWKS_UNAVAILABLE_MESSAGE);
@@ -302,7 +302,7 @@ export const createAuthenticationMiddleware =
     return (request: Request, _response: ExpressResponse, next: NextFunction): void => {
       const token = getBearerToken(request.headers.authorization);
       if (!token) {
-        next(new AppError(401, "Unauthorized", "Missing or invalid Authorization header."));
+        next(new AppError(401, "Unauthorized", "Falta el encabezado Authorization o no es valido."));
         return;
       }
 
@@ -328,18 +328,18 @@ export const createAuthenticationMiddleware =
               return;
             }
 
-            next(new AppError(401, "Unauthorized", "Invalid or expired JWT token."));
+            next(new AppError(401, "Unauthorized", "El token JWT es invalido o expiro."));
             return;
           }
 
           if (!isCatalogJwtPayload(decoded)) {
-            next(new AppError(401, "Unauthorized", "Invalid JWT payload."));
+            next(new AppError(401, "Unauthorized", "El contenido del token JWT no es valido."));
             return;
           }
 
           const normalizedRole = normalizeRole(decoded.role);
           if (!normalizedRole) {
-            next(new AppError(401, "Unauthorized", "Invalid JWT role claim."));
+            next(new AppError(401, "Unauthorized", "El rol del token JWT no es valido."));
             return;
           }
 

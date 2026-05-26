@@ -20,13 +20,13 @@ export class UpdateAlbumUseCase {
   public async execute(albumId: string, input: UpdateAlbumInput, user: AuthenticatedUser): Promise<Album> {
     const album = await this.albumRepository.findById(albumId);
     if (!album) {
-      throw new AppError(404, "AlbumNotFound", "Album not found.");
+      throw new AppError(404, "AlbumNotFound", "El album no existe o ya no esta disponible.");
     }
 
     this.authorizationService.assertArtistOwnership(user, album.artistId);
 
     if (!input.title && !input.coverAssetId) {
-      throw new AppError(400, "ValidationError", "At least one album field must be provided.");
+      throw new AppError(400, "ValidationError", "Debes enviar al menos un campo del album.");
     }
 
     if (input.coverAssetId) {

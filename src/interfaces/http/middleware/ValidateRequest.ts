@@ -18,7 +18,7 @@ export const validateRequest = (schema: ValidationSchema) => {
         message: issue.message
       }));
 
-      next(new AppError(400, "ValidationError", "Request validation failed.", details));
+      next(new AppError(400, "ValidationError", "La solicitud no cumple con el formato esperado.", details));
       return;
     }
 

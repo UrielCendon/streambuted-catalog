@@ -18,7 +18,7 @@ export class RetireAlbumUseCase {
   public async execute(albumId: string, user: AuthenticatedUser): Promise<Album> {
     const album = await this.albumRepository.findById(albumId);
     if (!album) {
-      throw new AppError(404, "AlbumNotFound", "Album not found.");
+      throw new AppError(404, "AlbumNotFound", "El album no existe o ya no esta disponible.");
     }
 
     this.authorizationService.assertArtistOwnershipOrAdmin(user, album.artistId);

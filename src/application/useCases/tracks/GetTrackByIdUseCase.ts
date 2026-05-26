@@ -9,7 +9,7 @@ export class GetTrackByIdUseCase {
   public async execute(trackId: string): Promise<Track> {
     const track = await this.trackRepository.findById(trackId);
     if (!track || track.status !== CatalogStatus.Publicado) {
-      throw new AppError(404, "TrackNotFound", "Track not found.");
+      throw new AppError(404, "TrackNotFound", "La pista no existe o ya no esta disponible.");
     }
 
     return track;

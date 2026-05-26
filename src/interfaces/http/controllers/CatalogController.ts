@@ -66,7 +66,7 @@ export class CatalogController {
     try {
       const authenticatedUser = request.authenticatedUser;
       if (!authenticatedUser) {
-        throw new AppError(401, "Unauthorized", "Authentication is required.");
+        throw new AppError(401, "Unauthorized", "Debes iniciar sesion para realizar esta accion.");
       }
 
       const album = await this.dependencies.createAlbumUseCase.execute(
@@ -87,7 +87,7 @@ export class CatalogController {
     try {
       const authenticatedUser = request.authenticatedUser;
       if (!authenticatedUser) {
-        throw new AppError(401, "Unauthorized", "Authentication is required.");
+        throw new AppError(401, "Unauthorized", "Debes iniciar sesion para realizar esta accion.");
       }
 
       const album = await this.dependencies.updateAlbumUseCase.execute(
@@ -108,7 +108,7 @@ export class CatalogController {
     try {
       const authenticatedUser = request.authenticatedUser;
       if (!authenticatedUser) {
-        throw new AppError(401, "Unauthorized", "Authentication is required.");
+        throw new AppError(401, "Unauthorized", "Debes iniciar sesion para realizar esta accion.");
       }
 
       const album = await this.dependencies.retireAlbumUseCase.execute(request.params.albumId, authenticatedUser);
@@ -152,7 +152,7 @@ export class CatalogController {
     try {
       const authenticatedUser = request.authenticatedUser;
       if (!authenticatedUser) {
-        throw new AppError(401, "Unauthorized", "Authentication is required.");
+        throw new AppError(401, "Unauthorized", "Debes iniciar sesion para realizar esta accion.");
       }
 
       const result = await this.dependencies.listAdminAlbumsUseCase.execute(
@@ -173,7 +173,7 @@ export class CatalogController {
     try {
       const authenticatedUser = request.authenticatedUser;
       if (!authenticatedUser) {
-        throw new AppError(401, "Unauthorized", "Authentication is required.");
+        throw new AppError(401, "Unauthorized", "Debes iniciar sesion para realizar esta accion.");
       }
 
       const createdTrack = await this.dependencies.createTrackUseCase.execute(
@@ -198,7 +198,7 @@ export class CatalogController {
     try {
       const authenticatedUser = request.authenticatedUser;
       if (!authenticatedUser) {
-        throw new AppError(401, "Unauthorized", "Authentication is required.");
+        throw new AppError(401, "Unauthorized", "Debes iniciar sesion para realizar esta accion.");
       }
 
       const createdTrack = await this.dependencies.createTrackUseCase.execute(
@@ -223,7 +223,7 @@ export class CatalogController {
     try {
       const authenticatedUser = request.authenticatedUser;
       if (!authenticatedUser) {
-        throw new AppError(401, "Unauthorized", "Authentication is required.");
+        throw new AppError(401, "Unauthorized", "Debes iniciar sesion para realizar esta accion.");
       }
 
       const track = await this.dependencies.updateTrackUseCase.execute(
@@ -248,7 +248,7 @@ export class CatalogController {
     try {
       const authenticatedUser = request.authenticatedUser;
       if (!authenticatedUser) {
-        throw new AppError(401, "Unauthorized", "Authentication is required.");
+        throw new AppError(401, "Unauthorized", "Debes iniciar sesion para realizar esta accion.");
       }
 
       const track = await this.dependencies.retireTrackUseCase.execute(request.params.trackId, authenticatedUser);
@@ -291,7 +291,7 @@ export class CatalogController {
     try {
       const authenticatedUser = request.authenticatedUser;
       if (!authenticatedUser) {
-        throw new AppError(401, "Unauthorized", "Authentication is required.");
+        throw new AppError(401, "Unauthorized", "Debes iniciar sesion para realizar esta accion.");
       }
 
       const result = await this.dependencies.listAdminTracksUseCase.execute(
@@ -321,7 +321,7 @@ export class CatalogController {
     try {
       const authenticatedUser = request.authenticatedUser;
       if (!authenticatedUser) {
-        throw new AppError(401, "Unauthorized", "Authentication is required.");
+        throw new AppError(401, "Unauthorized", "Debes iniciar sesion para realizar esta accion.");
       }
 
       const artist = await this.dependencies.updateArtistProfileUseCase.execute(

@@ -78,7 +78,7 @@ export class GrpcMediaAssetClient implements MediaAssetValidator {
     authorizationHeader: string
   ): Promise<MediaAssetMetadata> {
     if (!authorizationHeader.trim()) {
-      throw new AppError(401, "Unauthorized", "Authentication context is required to validate media assets.");
+      throw new AppError(401, "Unauthorized", "Se requiere contexto de autenticacion para validar archivos multimedia.");
     }
 
     const metadata = new grpc.Metadata();
@@ -170,7 +170,7 @@ const normalizeMetadataResponse = (
     throw new AppError(
       502,
       "MediaServiceUnavailable",
-      "Media Service returned an invalid asset metadata response."
+      "Media Service devolvio una respuesta de metadatos invalida."
     );
   }
 
@@ -197,29 +197,29 @@ const normalizeMetadataResponse = (
 const mapGrpcError = (error: grpc.ServiceError, assetId: string): AppError => {
   switch (error.code) {
     case grpc.status.UNAUTHENTICATED:
-      return new AppError(401, "Unauthorized", "Media Service rejected the authorization token.");
+      return new AppError(401, "Unauthorized", "Media Service rechazo el token de autorizacion.");
     case grpc.status.PERMISSION_DENIED:
-      return new AppError(403, "Forbidden", "The referenced media asset is not accessible.");
+      return new AppError(403, "Forbidden", "El archivo multimedia indicado no es accesible.");
     case grpc.status.NOT_FOUND:
     case grpc.status.INVALID_ARGUMENT:
-      return new AppError(400, "ValidationError", `Asset ${assetId} was not found.`);
+      return new AppError(400, "ValidationError", `No se encontro el archivo multimedia ${assetId}.`);
     case grpc.status.UNAVAILABLE:
       return new AppError(
         503,
         "MediaServiceUnavailable",
-        "Media Service is temporarily unavailable for asset validation."
+        "Media Service no esta disponible temporalmente para validar archivos."
       );
     case grpc.status.DEADLINE_EXCEEDED:
       return new AppError(
         504,
         "MediaServiceTimeout",
-        "Media Service timed out while validating the referenced asset."
+        "Media Service tardo demasiado al validar el archivo indicado."
       );
     default:
       return new AppError(
         502,
         "MediaServiceUnavailable",
-        "Media Service could not validate the referenced asset."
+        "Media Service no pudo validar el archivo indicado."
       );
   }
 };

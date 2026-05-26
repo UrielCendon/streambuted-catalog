@@ -8,7 +8,7 @@ export class GetArtistByIdUseCase {
   public async execute(artistId: string): Promise<Artist> {
     const artist = await this.artistRepository.findById(artistId);
     if (!artist) {
-      throw new AppError(404, "ArtistNotFound", "Artist not found.");
+      throw new AppError(404, "ArtistNotFound", "El perfil de artista no existe.");
     }
 
     return artist;

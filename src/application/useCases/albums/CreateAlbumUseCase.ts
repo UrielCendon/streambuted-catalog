@@ -31,7 +31,7 @@ export class CreateAlbumUseCase {
 
     const artistExists = await this.artistRepository.existsById(command.artistId);
     if (!artistExists) {
-      throw new AppError(404, "ArtistNotFound", "Artist not found.");
+      throw new AppError(404, "ArtistNotFound", "El perfil de artista no existe.");
     }
 
     await assertMediaAssetMatches(

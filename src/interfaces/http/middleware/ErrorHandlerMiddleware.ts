@@ -11,7 +11,25 @@ const flattenDetails = (details: unknown): Record<string, unknown> => {
 };
 
 export const notFoundMiddleware = (_request: Request, _response: Response, next: NextFunction): void => {
-  next(new AppError(404, "NotFound", "Route not found."));
+  next(new AppError(404, "NotFound", "La ruta solicitada no existe."));
+};
+
+const mapPrismaKnownError = (error: Error): AppError | null => {
+  const prismaError = error as Error & { code?: string };
+  if (error.name !== "PrismaClientKnownRequestError" || typeof prismaError.code !== "string") {
+    return null;
+  }
+
+  switch (prismaError.code) {
+    case "P2002":
+      return new AppError(409, "Conflict", "Ya existe un recurso con esos datos.");
+    case "P2003":
+      return new AppError(409, "Conflict", "La operacion referencia un recurso que no existe.");
+    case "P2025":
+      return new AppError(404, "NotFound", "El recurso solicitado no existe o ya no esta disponible.");
+    default:
+      return null;
+  }
 };
 
 export const errorHandlerMiddleware = (
@@ -45,6 +63,12 @@ export const errorHandlerMiddleware = (
     return;
   }
 
+  const mappedError = mapPrismaKnownError(error);
+  if (mappedError) {
+    errorHandlerMiddleware(mappedError, _request, response, _next);
+    return;
+  }
+
   logger.error("Unhandled error:", {
     name: error.name,
     message: error.message,
@@ -53,7 +77,7 @@ export const errorHandlerMiddleware = (
 
   response.status(500).json({
     error: "InternalServerError",
-    message: "An unexpected error occurred.",
+    message: "Ocurrio un error interno. Intenta de nuevo mas tarde.",
     statusCode: 500,
     timestamp: new Date().toISOString()
   });

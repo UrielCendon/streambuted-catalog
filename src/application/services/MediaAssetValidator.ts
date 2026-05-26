@@ -28,7 +28,7 @@ export async function assertMediaAssetMatches(
   }
 
   if (!authorizationHeader) {
-    throw new AppError(401, "Unauthorized", "Authentication context is required to validate media assets.");
+    throw new AppError(401, "Unauthorized", "Se requiere contexto de autenticacion para validar archivos multimedia.");
   }
 
   const metadata = await validator.getMetadata(assetId, authorizationHeader);
@@ -36,7 +36,7 @@ export async function assertMediaAssetMatches(
     throw new AppError(
       400,
       "ValidationError",
-      `Asset ${assetId} must exist and be of type ${expectedType}.`
+      `El archivo ${assetId} debe existir y ser de tipo ${expectedType}.`
     );
   }
 
@@ -44,7 +44,7 @@ export async function assertMediaAssetMatches(
     throw new AppError(
       403,
       "Forbidden",
-      "The referenced media asset does not belong to the authenticated user."
+      "El archivo multimedia indicado no pertenece al usuario autenticado."
     );
   }
 

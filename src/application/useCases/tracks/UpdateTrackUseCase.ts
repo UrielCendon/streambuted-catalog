@@ -22,7 +22,7 @@ export class UpdateTrackUseCase {
   public async execute(trackId: string, input: UpdateTrackInput, user: AuthenticatedUser): Promise<Track> {
     const track = await this.trackRepository.findById(trackId);
     if (!track) {
-      throw new AppError(404, "TrackNotFound", "Track not found.");
+      throw new AppError(404, "TrackNotFound", "La pista no existe o ya no esta disponible.");
     }
 
     this.authorizationService.assertArtistOwnership(user, track.artistId);
@@ -35,17 +35,17 @@ export class UpdateTrackUseCase {
       input.durationSeconds === undefined &&
       input.albumId === undefined
     ) {
-      throw new AppError(400, "ValidationError", "At least one track field must be provided.");
+      throw new AppError(400, "ValidationError", "Debes enviar al menos un campo de la pista.");
     }
 
     if (input.albumId !== undefined && input.albumId !== null) {
       const album = await this.albumRepository.findById(input.albumId);
       if (!album) {
-        throw new AppError(404, "AlbumNotFound", "Album not found.");
+        throw new AppError(404, "AlbumNotFound", "El album no existe o ya no esta disponible.");
       }
 
       if (album.artistId !== track.artistId) {
-        throw new AppError(400, "ValidationError", "The album does not belong to the track artist.");
+        throw new AppError(400, "ValidationError", "El album no pertenece al artista de la pista.");
       }
     }
 

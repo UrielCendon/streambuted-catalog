@@ -9,7 +9,7 @@ export class GetAlbumByIdUseCase {
   public async execute(albumId: string): Promise<Album> {
     const album = await this.albumRepository.findById(albumId);
     if (!album || album.status !== CatalogStatus.Publicado) {
-      throw new AppError(404, "AlbumNotFound", "Album not found.");
+      throw new AppError(404, "AlbumNotFound", "El album no existe o ya no esta disponible.");
     }
 
     return album;
