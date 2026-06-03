@@ -9,6 +9,8 @@ import { GetAlbumByIdUseCase } from "./application/useCases/albums/GetAlbumByIdU
 import { ListAdminAlbumsUseCase } from "./application/useCases/albums/ListAdminAlbumsUseCase";
 import { ListAlbumTracksUseCase } from "./application/useCases/albums/ListAlbumTracksUseCase";
 import { ListArtistAlbumsUseCase } from "./application/useCases/albums/ListArtistAlbumsUseCase";
+import { DeleteAlbumUseCase } from "./application/useCases/albums/DeleteAlbumUseCase";
+import { ReinstateAlbumUseCase } from "./application/useCases/albums/ReinstateAlbumUseCase";
 import { RetireAlbumUseCase } from "./application/useCases/albums/RetireAlbumUseCase";
 import { UpdateAlbumUseCase } from "./application/useCases/albums/UpdateAlbumUseCase";
 import { GetArtistByIdUseCase } from "./application/useCases/artists/GetArtistByIdUseCase";
@@ -16,10 +18,12 @@ import { HandleUserPromotedUseCase } from "./application/useCases/artists/Handle
 import { UpdateArtistProfileUseCase } from "./application/useCases/artists/UpdateArtistProfileUseCase";
 import { SearchCatalogUseCase } from "./application/useCases/catalog/SearchCatalogUseCase";
 import { CreateTrackUseCase } from "./application/useCases/tracks/CreateTrackUseCase";
+import { DeleteTrackUseCase } from "./application/useCases/tracks/DeleteTrackUseCase";
 import { GetTrackByIdUseCase } from "./application/useCases/tracks/GetTrackByIdUseCase";
 import { ListAdminTracksUseCase } from "./application/useCases/tracks/ListAdminTracksUseCase";
 import { ListArtistTracksUseCase } from "./application/useCases/tracks/ListArtistTracksUseCase";
 import { ListPublishedTracksByIdsUseCase } from "./application/useCases/tracks/ListPublishedTracksByIdsUseCase";
+import { ReinstateTrackUseCase } from "./application/useCases/tracks/ReinstateTrackUseCase";
 import { RetireTrackUseCase } from "./application/useCases/tracks/RetireTrackUseCase";
 import { UpdateTrackUseCase } from "./application/useCases/tracks/UpdateTrackUseCase";
 import { CatalogEventOutbox } from "./infrastructure/messaging/CatalogEventOutbox";
@@ -103,6 +107,18 @@ export const createApplication = (): ApplicationContext => {
     authorizationService,
     catalogEventOutbox
   );
+  const deleteAlbumUseCase = new DeleteAlbumUseCase(
+    albumRepository,
+    trackRepository,
+    authorizationService,
+    catalogEventOutbox
+  );
+  const reinstateAlbumUseCase = new ReinstateAlbumUseCase(
+    albumRepository,
+    trackRepository,
+    authorizationService,
+    catalogEventOutbox
+  );
   const listArtistAlbumsUseCase = new ListArtistAlbumsUseCase(albumRepository);
   const listAdminAlbumsUseCase = new ListAdminAlbumsUseCase(albumRepository, authorizationService);
 
@@ -128,6 +144,17 @@ export const createApplication = (): ApplicationContext => {
     authorizationService,
     catalogEventOutbox
   );
+  const deleteTrackUseCase = new DeleteTrackUseCase(
+    trackRepository,
+    authorizationService,
+    catalogEventOutbox
+  );
+  const reinstateTrackUseCase = new ReinstateTrackUseCase(
+    trackRepository,
+    albumRepository,
+    authorizationService,
+    catalogEventOutbox
+  );
   const listArtistTracksUseCase = new ListArtistTracksUseCase(trackRepository);
   const listAdminTracksUseCase = new ListAdminTracksUseCase(trackRepository, authorizationService);
 
@@ -149,20 +176,25 @@ export const createApplication = (): ApplicationContext => {
     searchCatalogUseCase,
     createAlbumUseCase,
     updateAlbumUseCase,
+    deleteAlbumUseCase,
     retireAlbumUseCase,
+    reinstateAlbumUseCase,
     getAlbumByIdUseCase,
     listAlbumTracksUseCase,
     listArtistAlbumsUseCase,
     listAdminAlbumsUseCase,
     createTrackUseCase,
     updateTrackUseCase,
+    deleteTrackUseCase,
     retireTrackUseCase,
+    reinstateTrackUseCase,
     getTrackByIdUseCase,
     listArtistTracksUseCase,
     listAdminTracksUseCase,
     listPublishedTracksByIdsUseCase,
     getArtistByIdUseCase,
-    updateArtistProfileUseCase
+    updateArtistProfileUseCase,
+    authorizationService
   });
 
   const app = express();

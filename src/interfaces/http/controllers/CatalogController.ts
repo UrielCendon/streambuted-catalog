@@ -6,17 +6,22 @@ import { GetAlbumByIdUseCase } from "../../../application/useCases/albums/GetAlb
 import { ListAdminAlbumsUseCase } from "../../../application/useCases/albums/ListAdminAlbumsUseCase";
 import { ListAlbumTracksUseCase } from "../../../application/useCases/albums/ListAlbumTracksUseCase";
 import { ListArtistAlbumsUseCase } from "../../../application/useCases/albums/ListArtistAlbumsUseCase";
+import { DeleteAlbumUseCase } from "../../../application/useCases/albums/DeleteAlbumUseCase";
+import { ReinstateAlbumUseCase } from "../../../application/useCases/albums/ReinstateAlbumUseCase";
 import { RetireAlbumUseCase } from "../../../application/useCases/albums/RetireAlbumUseCase";
 import { UpdateAlbumUseCase } from "../../../application/useCases/albums/UpdateAlbumUseCase";
 import { SearchCatalogUseCase } from "../../../application/useCases/catalog/SearchCatalogUseCase";
 import { CreateTrackUseCase } from "../../../application/useCases/tracks/CreateTrackUseCase";
+import { DeleteTrackUseCase } from "../../../application/useCases/tracks/DeleteTrackUseCase";
 import { GetTrackByIdUseCase } from "../../../application/useCases/tracks/GetTrackByIdUseCase";
 import { ListAdminTracksUseCase } from "../../../application/useCases/tracks/ListAdminTracksUseCase";
 import { ListArtistTracksUseCase } from "../../../application/useCases/tracks/ListArtistTracksUseCase";
 import { ListPublishedTracksByIdsUseCase } from "../../../application/useCases/tracks/ListPublishedTracksByIdsUseCase";
+import { ReinstateTrackUseCase } from "../../../application/useCases/tracks/ReinstateTrackUseCase";
 import { RetireTrackUseCase } from "../../../application/useCases/tracks/RetireTrackUseCase";
 import { UpdateTrackUseCase } from "../../../application/useCases/tracks/UpdateTrackUseCase";
 import { AppError } from "../../../application/errors/AppError";
+import { AuthorizationService } from "../../../application/services/AuthorizationService";
 
 const readAlias = (body: Record<string, unknown>, firstKey: string, secondKey: string): unknown =>
   body[firstKey] !== undefined ? body[firstKey] : body[secondKey];
@@ -25,20 +30,25 @@ interface CatalogControllerDependencies {
   searchCatalogUseCase: SearchCatalogUseCase;
   createAlbumUseCase: CreateAlbumUseCase;
   updateAlbumUseCase: UpdateAlbumUseCase;
+  deleteAlbumUseCase: DeleteAlbumUseCase;
   retireAlbumUseCase: RetireAlbumUseCase;
+  reinstateAlbumUseCase: ReinstateAlbumUseCase;
   getAlbumByIdUseCase: GetAlbumByIdUseCase;
   listAlbumTracksUseCase: ListAlbumTracksUseCase;
   listArtistAlbumsUseCase: ListArtistAlbumsUseCase;
   listAdminAlbumsUseCase: ListAdminAlbumsUseCase;
   createTrackUseCase: CreateTrackUseCase;
   updateTrackUseCase: UpdateTrackUseCase;
+  deleteTrackUseCase: DeleteTrackUseCase;
   retireTrackUseCase: RetireTrackUseCase;
+  reinstateTrackUseCase: ReinstateTrackUseCase;
   getTrackByIdUseCase: GetTrackByIdUseCase;
   listArtistTracksUseCase: ListArtistTracksUseCase;
   listAdminTracksUseCase: ListAdminTracksUseCase;
   listPublishedTracksByIdsUseCase: ListPublishedTracksByIdsUseCase;
   getArtistByIdUseCase: GetArtistByIdUseCase;
   updateArtistProfileUseCase: UpdateArtistProfileUseCase;
+  authorizationService: AuthorizationService;
 }
 
 export class CatalogController {
@@ -148,6 +158,53 @@ export class CatalogController {
     }
   };
 
+  public deleteAlbum = async (request: Request, response: Response, next: NextFunction): Promise<void> => {
+    try {
+      const authenticatedUser = request.authenticatedUser;
+      if (!authenticatedUser) {
+        throw new AppError(401, "Unauthorized", "Debes iniciar sesion para realizar esta accion.");
+      }
+
+      const album = await this.dependencies.deleteAlbumUseCase.execute(request.params.albumId, authenticatedUser);
+      response.status(200).json(album);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  public reinstateAlbum = async (request: Request, response: Response, next: NextFunction): Promise<void> => {
+    try {
+      const authenticatedUser = request.authenticatedUser;
+      if (!authenticatedUser) {
+        throw new AppError(401, "Unauthorized", "Debes iniciar sesion para realizar esta accion.");
+      }
+
+      const album = await this.dependencies.reinstateAlbumUseCase.execute(request.params.albumId, authenticatedUser);
+      response.status(200).json(album);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  public listManagedArtistAlbums = async (request: Request, response: Response, next: NextFunction): Promise<void> => {
+    try {
+      const authenticatedUser = request.authenticatedUser;
+      if (!authenticatedUser) {
+        throw new AppError(401, "Unauthorized", "Debes iniciar sesion para realizar esta accion.");
+      }
+
+      this.dependencies.authorizationService.assertArtistOwnershipOrAdmin(
+        authenticatedUser,
+        request.params.artistId
+      );
+
+      const albums = await this.dependencies.listArtistAlbumsUseCase.execute(request.params.artistId, true);
+      response.status(200).json(albums);
+    } catch (error) {
+      next(error);
+    }
+  };
+
   public listAdminAlbums = async (request: Request, response: Response, next: NextFunction): Promise<void> => {
     try {
       const authenticatedUser = request.authenticatedUser;
@@ -161,7 +218,8 @@ export class CatalogController {
         {
           limit: Number(request.query.limit ?? 50),
           offset: Number(request.query.offset ?? 0)
-        }
+        },
+        typeof request.query.q === "string" ? request.query.q : undefined
       );
       response.status(200).json(result);
     } catch (error) {
@@ -258,6 +316,34 @@ export class CatalogController {
     }
   };
 
+  public deleteTrack = async (request: Request, response: Response, next: NextFunction): Promise<void> => {
+    try {
+      const authenticatedUser = request.authenticatedUser;
+      if (!authenticatedUser) {
+        throw new AppError(401, "Unauthorized", "Debes iniciar sesion para realizar esta accion.");
+      }
+
+      const track = await this.dependencies.deleteTrackUseCase.execute(request.params.trackId, authenticatedUser);
+      response.status(200).json(track);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  public reinstateTrack = async (request: Request, response: Response, next: NextFunction): Promise<void> => {
+    try {
+      const authenticatedUser = request.authenticatedUser;
+      if (!authenticatedUser) {
+        throw new AppError(401, "Unauthorized", "Debes iniciar sesion para realizar esta accion.");
+      }
+
+      const track = await this.dependencies.reinstateTrackUseCase.execute(request.params.trackId, authenticatedUser);
+      response.status(200).json(track);
+    } catch (error) {
+      next(error);
+    }
+  };
+
   public getTrackById = async (request: Request, response: Response, next: NextFunction): Promise<void> => {
     try {
       const track = await this.dependencies.getTrackByIdUseCase.execute(request.params.trackId);
@@ -287,6 +373,25 @@ export class CatalogController {
     }
   };
 
+  public listManagedArtistTracks = async (request: Request, response: Response, next: NextFunction): Promise<void> => {
+    try {
+      const authenticatedUser = request.authenticatedUser;
+      if (!authenticatedUser) {
+        throw new AppError(401, "Unauthorized", "Debes iniciar sesion para realizar esta accion.");
+      }
+
+      this.dependencies.authorizationService.assertArtistOwnershipOrAdmin(
+        authenticatedUser,
+        request.params.artistId
+      );
+
+      const tracks = await this.dependencies.listArtistTracksUseCase.execute(request.params.artistId, true);
+      response.status(200).json(tracks);
+    } catch (error) {
+      next(error);
+    }
+  };
+
   public listAdminTracks = async (request: Request, response: Response, next: NextFunction): Promise<void> => {
     try {
       const authenticatedUser = request.authenticatedUser;
@@ -300,7 +405,8 @@ export class CatalogController {
         {
           limit: Number(request.query.limit ?? 50),
           offset: Number(request.query.offset ?? 0)
-        }
+        },
+        typeof request.query.q === "string" ? request.query.q : undefined
       );
       response.status(200).json(result);
     } catch (error) {

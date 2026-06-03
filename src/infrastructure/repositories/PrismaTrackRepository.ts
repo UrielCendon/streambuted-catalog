@@ -1,6 +1,12 @@
-import { CatalogStatus as PrismaCatalogStatus, Prisma, PrismaClient } from "@prisma/client";
+import {
+  CatalogStatus as PrismaCatalogStatus,
+  CatalogVisibilityReason as PrismaCatalogVisibilityReason,
+  Prisma,
+  PrismaClient
+} from "@prisma/client";
 import { Track } from "../../domain/entities/Track";
 import { CatalogStatus } from "../../domain/enums/CatalogStatus";
+import { CatalogVisibilityReason } from "../../domain/enums/CatalogVisibilityReason";
 import {
   AdminTrackListItem,
   CreateTrackInput,
@@ -12,9 +18,63 @@ import { Pagination } from "../../domain/valueObjects/Pagination";
 
 const toPrismaStatus = (status: CatalogStatus): PrismaCatalogStatus => status as PrismaCatalogStatus;
 const toDomainStatus = (status: PrismaCatalogStatus): CatalogStatus => status as CatalogStatus;
+const toPrismaVisibilityReason = (
+  visibilityReason: CatalogVisibilityReason | null | undefined
+): PrismaCatalogVisibilityReason | null | undefined =>
+  visibilityReason === undefined ? undefined : visibilityReason as PrismaCatalogVisibilityReason | null;
+const toDomainVisibilityReason = (
+  visibilityReason: PrismaCatalogVisibilityReason | null
+): CatalogVisibilityReason | null => visibilityReason as CatalogVisibilityReason | null;
 
 const PRISMA_STATUS_PUBLICADO: PrismaCatalogStatus = "PUBLICADO";
 const PRISMA_STATUS_RETIRADO: PrismaCatalogStatus = "RETIRADO";
+const PRISMA_VISIBILITY_ADMIN_RETIRED: PrismaCatalogVisibilityReason = "ADMIN_RETIRED";
+const PRISMA_VISIBILITY_ARTIST_DELETED: PrismaCatalogVisibilityReason = "ARTIST_DELETED";
+
+function buildAdminTrackWhere(
+  includeRetired: boolean,
+  searchTerm?: string
+): Prisma.TrackWhereInput {
+  const normalizedSearchTerm = searchTerm?.trim();
+  const where: Prisma.TrackWhereInput = includeRetired
+    ? {
+      OR: [
+        { status: PRISMA_STATUS_PUBLICADO },
+        { visibilityReason: PRISMA_VISIBILITY_ADMIN_RETIRED }
+      ]
+    }
+    : { status: PRISMA_STATUS_PUBLICADO };
+
+  if (!normalizedSearchTerm) {
+    return where;
+  }
+
+  const statusMatches: PrismaCatalogStatus[] = [];
+  const comparableSearchTerm = normalizedSearchTerm.toLowerCase();
+
+  if ("publicado".includes(comparableSearchTerm) || comparableSearchTerm.includes("public")) {
+    statusMatches.push(PRISMA_STATUS_PUBLICADO);
+  }
+
+  if ("retirado".includes(comparableSearchTerm) || comparableSearchTerm.includes("retir")) {
+    statusMatches.push(PRISMA_STATUS_RETIRADO);
+  }
+
+  return {
+    AND: [
+      where,
+      {
+        OR: [
+          { title: { contains: normalizedSearchTerm, mode: "insensitive" } },
+          { genre: { contains: normalizedSearchTerm, mode: "insensitive" } },
+          { artist: { displayName: { contains: normalizedSearchTerm, mode: "insensitive" } } },
+          { album: { is: { title: { contains: normalizedSearchTerm, mode: "insensitive" } } } },
+          ...(statusMatches.length > 0 ? [{ status: { in: statusMatches } }] : [])
+        ]
+      }
+    ]
+  };
+}
 
 const mapTrack = (track: {
   trackId: string;
@@ -26,6 +86,7 @@ const mapTrack = (track: {
   coverAssetId: string;
   durationSeconds: number | null;
   status: PrismaCatalogStatus;
+  visibilityReason: PrismaCatalogVisibilityReason | null;
   createdAt: Date;
   updatedAt: Date;
 }): Track => ({
@@ -38,6 +99,7 @@ const mapTrack = (track: {
   coverAssetId: track.coverAssetId,
   durationSeconds: track.durationSeconds,
   status: toDomainStatus(track.status),
+  visibilityReason: toDomainVisibilityReason(track.visibilityReason),
   createdAt: track.createdAt,
   updatedAt: track.updatedAt
 });
@@ -73,7 +135,8 @@ export class PrismaTrackRepository implements TrackRepository {
         audioAssetId: input.audioAssetId,
         coverAssetId: input.coverAssetId,
         durationSeconds: input.durationSeconds ?? null,
-        status: toPrismaStatus(input.status ?? CatalogStatus.Publicado)
+        status: toPrismaStatus(input.status ?? CatalogStatus.Publicado),
+        visibilityReason: toPrismaVisibilityReason(input.visibilityReason ?? null)
       }
     });
 
@@ -104,21 +167,82 @@ export class PrismaTrackRepository implements TrackRepository {
     return mapTrack(track);
   }
 
-  public async retire(trackId: string): Promise<Track> {
+  public async retire(trackId: string, visibilityReason: CatalogVisibilityReason): Promise<Track> {
     const track = await this.prisma.track.update({
       where: { trackId },
       data: {
-        status: PRISMA_STATUS_RETIRADO
+        status: PRISMA_STATUS_RETIRADO,
+        visibilityReason: toPrismaVisibilityReason(visibilityReason)
       }
     });
 
     return mapTrack(track);
   }
 
-  public async detachAlbum(albumId: string): Promise<number> {
+  public async reinstate(trackId: string): Promise<Track> {
+    const track = await this.prisma.track.update({
+      where: { trackId },
+      data: {
+        status: PRISMA_STATUS_PUBLICADO,
+        visibilityReason: null
+      }
+    });
+
+    return mapTrack(track);
+  }
+
+  public async retireByAlbum(albumId: string, visibilityReason: CatalogVisibilityReason): Promise<number> {
+    const result = await this.prisma.track.updateMany({
+      where: {
+        albumId,
+        OR: [
+          { visibilityReason: null },
+          { visibilityReason: PRISMA_VISIBILITY_ADMIN_RETIRED }
+        ]
+      },
+      data: {
+        status: PRISMA_STATUS_RETIRADO,
+        visibilityReason: toPrismaVisibilityReason(visibilityReason)
+      }
+    });
+
+    return result.count;
+  }
+
+  public async reinstateByAlbum(albumId: string): Promise<number> {
+    const result = await this.prisma.track.updateMany({
+      where: {
+        albumId,
+        visibilityReason: PRISMA_VISIBILITY_ADMIN_RETIRED
+      },
+      data: {
+        status: PRISMA_STATUS_PUBLICADO,
+        visibilityReason: null
+      }
+    });
+
+    return result.count;
+  }
+
+  public async markDeleted(trackId: string): Promise<Track> {
+    const track = await this.prisma.track.update({
+      where: { trackId },
+      data: {
+        status: PRISMA_STATUS_RETIRADO,
+        visibilityReason: PRISMA_VISIBILITY_ARTIST_DELETED
+      }
+    });
+
+    return mapTrack(track);
+  }
+
+  public async markDeletedByAlbum(albumId: string): Promise<number> {
     const result = await this.prisma.track.updateMany({
       where: { albumId },
-      data: { albumId: null }
+      data: {
+        status: PRISMA_STATUS_RETIRADO,
+        visibilityReason: PRISMA_VISIBILITY_ARTIST_DELETED
+      }
     });
 
     return result.count;
@@ -152,15 +276,19 @@ export class PrismaTrackRepository implements TrackRepository {
     return tracks.map(mapTrack);
   }
 
-  public async countAllForAdmin(includeRetired: boolean): Promise<number> {
+  public async countAllForAdmin(includeRetired: boolean, searchTerm?: string): Promise<number> {
     return this.prisma.track.count({
-      where: includeRetired ? {} : { status: PRISMA_STATUS_PUBLICADO }
+      where: buildAdminTrackWhere(includeRetired, searchTerm)
     });
   }
 
-  public async listAllForAdmin(includeRetired: boolean, pagination: Pagination): Promise<AdminTrackListItem[]> {
+  public async listAllForAdmin(
+    includeRetired: boolean,
+    pagination: Pagination,
+    searchTerm?: string
+  ): Promise<AdminTrackListItem[]> {
     const tracks = await this.prisma.track.findMany({
-      where: includeRetired ? {} : { status: PRISMA_STATUS_PUBLICADO },
+      where: buildAdminTrackWhere(includeRetired, searchTerm),
       include: {
         artist: {
           select: { displayName: true }
@@ -183,7 +311,14 @@ export class PrismaTrackRepository implements TrackRepository {
     const tracks = await this.prisma.track.findMany({
       where: {
         artistId,
-        ...(includeRetired ? {} : { status: PRISMA_STATUS_PUBLICADO })
+        ...(includeRetired
+          ? {
+            OR: [
+              { status: PRISMA_STATUS_PUBLICADO },
+              { visibilityReason: PRISMA_VISIBILITY_ADMIN_RETIRED }
+            ]
+          }
+          : { status: PRISMA_STATUS_PUBLICADO })
       },
       orderBy: {
         createdAt: "desc"

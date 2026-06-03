@@ -12,6 +12,11 @@ enum CatalogStatus {
   RETIRADO
 }
 
+enum CatalogVisibilityReason {
+  ADMIN_RETIRED
+  ARTIST_DELETED
+}
+
 model Artist {
   artistId            String   @id @default(uuid()) @db.Uuid @map("artist_id")
   displayName         String   @map("display_name")
@@ -32,6 +37,7 @@ model Album {
   title         String
   coverAssetId  String        @db.Uuid @map("cover_asset_id")
   status        CatalogStatus @default(PUBLICADO)
+  visibilityReason CatalogVisibilityReason? @map("visibility_reason")
   tracks        Track[]
   createdAt     DateTime      @default(now()) @map("created_at")
   updatedAt     DateTime      @updatedAt @map("updated_at")
@@ -53,6 +59,7 @@ model Track {
   coverAssetId  String        @db.Uuid @map("cover_asset_id")
   durationSeconds Float?      @map("duration_seconds")
   status        CatalogStatus @default(PUBLICADO)
+  visibilityReason CatalogVisibilityReason? @map("visibility_reason")
   createdAt     DateTime      @default(now()) @map("created_at")
   updatedAt     DateTime      @updatedAt @map("updated_at")
 

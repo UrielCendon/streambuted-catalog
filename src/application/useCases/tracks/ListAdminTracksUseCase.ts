@@ -17,13 +17,14 @@ export class ListAdminTracksUseCase {
   public async execute(
     user: AuthenticatedUser,
     includeRetired: boolean,
-    pagination: Pagination
+    pagination: Pagination,
+    searchTerm?: string
   ): Promise<AdminTrackListResponse> {
     this.authorizationService.assertAdminRole(user);
 
     const [data, total] = await Promise.all([
-      this.trackRepository.listAllForAdmin(includeRetired, pagination),
-      this.trackRepository.countAllForAdmin(includeRetired)
+      this.trackRepository.listAllForAdmin(includeRetired, pagination, searchTerm),
+      this.trackRepository.countAllForAdmin(includeRetired, searchTerm)
     ]);
 
     return {

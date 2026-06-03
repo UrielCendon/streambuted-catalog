@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { AppError } from "../../../application/errors/AppError";
 import { logger } from "../../../infrastructure/logging/logger";
+import { inferPublicErrorCode, resolvePublicMessage } from "./PublicErrorPolicy";
 
 const flattenDetails = (details: unknown): Record<string, unknown> => {
   if (!details || typeof details !== "object" || Array.isArray(details)) {
@@ -39,8 +40,11 @@ export const errorHandlerMiddleware = (
   _next: NextFunction
 ): void => {
   if (error instanceof AppError) {
+    const publicCode = inferPublicErrorCode(error.statusCode, error.code, error.message);
+    const publicMessage = resolvePublicMessage(publicCode, error.message);
     const logPayload = {
       code: error.code,
+      publicCode,
       message: error.message,
       statusCode: error.statusCode,
       details: error.details ?? null
@@ -54,8 +58,9 @@ export const errorHandlerMiddleware = (
 
     response.status(error.statusCode).json({
       error: error.code,
+      code: publicCode,
       ...flattenDetails(error.details),
-      message: error.message,
+      message: publicMessage,
       statusCode: error.statusCode,
       details: error.details ?? null,
       timestamp: new Date().toISOString()
@@ -77,7 +82,8 @@ export const errorHandlerMiddleware = (
 
   response.status(500).json({
     error: "InternalServerError",
-    message: "Ocurrio un error interno. Intenta de nuevo mas tarde.",
+    code: "unexpected_operation_failure",
+    message: "No se pudo completar la accion en este momento. Intenta de nuevo mas tarde.",
     statusCode: 500,
     timestamp: new Date().toISOString()
   });

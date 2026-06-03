@@ -45,7 +45,19 @@ export const buildCatalogRouter = (
     catalogController.updateArtistProfile
   );
   router.get("/artists/:artistId/albums", validateRequest(artistIdParamSchema), catalogController.listArtistAlbums);
+  router.get(
+    "/artists/:artistId/albums/managed",
+    authenticationMiddleware,
+    validateRequest(artistIdParamSchema),
+    catalogController.listManagedArtistAlbums
+  );
   router.get("/artists/:artistId/tracks", validateRequest(artistIdParamSchema), catalogController.listArtistTracks);
+  router.get(
+    "/artists/:artistId/tracks/managed",
+    authenticationMiddleware,
+    validateRequest(artistIdParamSchema),
+    catalogController.listManagedArtistTracks
+  );
 
   router.get("/albums/:albumId", validateRequest(albumIdParamSchema), catalogController.getAlbumById);
   router.get("/albums/:albumId/tracks", validateRequest(albumIdParamSchema), catalogController.listAlbumTracks);
@@ -67,6 +79,18 @@ export const buildCatalogRouter = (
     authenticationMiddleware,
     validateRequest(albumIdParamSchema),
     catalogController.retireAlbum
+  );
+  router.patch(
+    "/albums/:albumId/reinstate",
+    authenticationMiddleware,
+    validateRequest(albumIdParamSchema),
+    catalogController.reinstateAlbum
+  );
+  router.delete(
+    "/albums/:albumId",
+    authenticationMiddleware,
+    validateRequest(albumIdParamSchema),
+    catalogController.deleteAlbum
   );
   router.post(
     "/albums/:albumId/tracks",
@@ -95,6 +119,18 @@ export const buildCatalogRouter = (
     authenticationMiddleware,
     validateRequest(trackIdParamSchema),
     catalogController.retireTrack
+  );
+  router.patch(
+    "/tracks/:trackId/reinstate",
+    authenticationMiddleware,
+    validateRequest(trackIdParamSchema),
+    catalogController.reinstateTrack
+  );
+  router.delete(
+    "/tracks/:trackId",
+    authenticationMiddleware,
+    validateRequest(trackIdParamSchema),
+    catalogController.deleteTrack
   );
 
   return router;

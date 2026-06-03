@@ -11,6 +11,8 @@ describe("ListAlbumTracksUseCase", () => {
       findById: jest.fn(),
       update: jest.fn(),
       retire: jest.fn(),
+      reinstate: jest.fn(),
+      markDeleted: jest.fn(),
       countAllForAdmin: jest.fn(),
       listAllForAdmin: jest.fn(),
       searchPublishedByTitle: jest.fn(),
@@ -21,7 +23,11 @@ describe("ListAlbumTracksUseCase", () => {
       findById: jest.fn(),
       update: jest.fn(),
       retire: jest.fn(),
-      detachAlbum: jest.fn(),
+      reinstate: jest.fn(),
+      retireByAlbum: jest.fn(),
+      reinstateByAlbum: jest.fn(),
+      markDeleted: jest.fn(),
+      markDeletedByAlbum: jest.fn(),
       searchPublishedByTitle: jest.fn(),
       listByArtist: jest.fn(),
       countAllForAdmin: jest.fn(),
@@ -44,6 +50,7 @@ describe("ListAlbumTracksUseCase", () => {
       title: "Night Drive",
       coverAssetId: "13fa6760-b0b2-40a8-a590-4622f7613656",
       status: CatalogStatus.Publicado,
+      visibilityReason: null,
       createdAt: new Date(),
       updatedAt: new Date()
     });
@@ -58,6 +65,7 @@ describe("ListAlbumTracksUseCase", () => {
         coverAssetId: "13fa6760-b0b2-40a8-a590-4622f7613656",
         durationSeconds: 185,
         status: CatalogStatus.Publicado,
+        visibilityReason: null,
         createdAt: new Date(),
         updatedAt: new Date()
       }
@@ -78,6 +86,7 @@ describe("ListAlbumTracksUseCase", () => {
       title: "Night Drive",
       coverAssetId: "13fa6760-b0b2-40a8-a590-4622f7613656",
       status: CatalogStatus.Retirado,
+      visibilityReason: null,
       createdAt: new Date(),
       updatedAt: new Date()
     });

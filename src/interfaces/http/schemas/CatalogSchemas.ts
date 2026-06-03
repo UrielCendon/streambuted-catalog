@@ -184,6 +184,7 @@ export const adminCatalogListSchema = z.object({
   params: z.object({}).passthrough(),
   query: z.object({
     includeRetired: optionalBooleanQuerySchema,
+    q: z.string().trim().min(1).max(100).optional(),
     limit: z.coerce.number().int().min(1).max(100).default(50),
     offset: z.coerce.number().int().min(0).default(0)
   }),

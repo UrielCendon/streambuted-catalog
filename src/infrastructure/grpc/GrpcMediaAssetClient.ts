@@ -170,7 +170,7 @@ const normalizeMetadataResponse = (
     throw new AppError(
       502,
       "MediaServiceUnavailable",
-      "Media Service devolvio una respuesta de metadatos invalida."
+      "No se pudo validar la informacion relacionada con esta accion."
     );
   }
 
@@ -197,7 +197,7 @@ const normalizeMetadataResponse = (
 const mapGrpcError = (error: grpc.ServiceError, assetId: string): AppError => {
   switch (error.code) {
     case grpc.status.UNAUTHENTICATED:
-      return new AppError(401, "Unauthorized", "Media Service rechazo el token de autorizacion.");
+      return new AppError(401, "Unauthorized", "Tu sesion expiro. Inicia sesion nuevamente.");
     case grpc.status.PERMISSION_DENIED:
       return new AppError(403, "Forbidden", "El archivo multimedia indicado no es accesible.");
     case grpc.status.NOT_FOUND:
@@ -207,19 +207,19 @@ const mapGrpcError = (error: grpc.ServiceError, assetId: string): AppError => {
       return new AppError(
         503,
         "MediaServiceUnavailable",
-        "Media Service no esta disponible temporalmente para validar archivos."
+        "Esta funcion no esta disponible en este momento. Intenta de nuevo mas tarde."
       );
     case grpc.status.DEADLINE_EXCEEDED:
       return new AppError(
         504,
         "MediaServiceTimeout",
-        "Media Service tardo demasiado al validar el archivo indicado."
+        "La solicitud tardo demasiado y no se pudo completar. Intenta nuevamente."
       );
     default:
       return new AppError(
         502,
         "MediaServiceUnavailable",
-        "Media Service no pudo validar el archivo indicado."
+        "No se pudo validar la informacion relacionada con esta accion."
       );
   }
 };

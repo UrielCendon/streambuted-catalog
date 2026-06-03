@@ -1,4 +1,5 @@
 import { CatalogStatus } from "../enums/CatalogStatus";
+import { CatalogVisibilityReason } from "../enums/CatalogVisibilityReason";
 
 export interface Track {
   trackId: string;
@@ -10,6 +11,7 @@ export interface Track {
   coverAssetId: string;
   durationSeconds: number | null;
   status: CatalogStatus;
+  visibilityReason: CatalogVisibilityReason | null;
   createdAt: Date;
   updatedAt: Date;
 }

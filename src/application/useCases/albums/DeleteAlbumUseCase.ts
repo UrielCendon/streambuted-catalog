@@ -3,12 +3,11 @@ import { AppError } from "../../errors/AppError";
 import { AuthorizationService } from "../../services/AuthorizationService";
 import { CatalogEventRecorder } from "../../services/CatalogEventRecorder";
 import { Album } from "../../../domain/entities/Album";
-import { CatalogStatus } from "../../../domain/enums/CatalogStatus";
 import { CatalogVisibilityReason } from "../../../domain/enums/CatalogVisibilityReason";
 import { AlbumRepository } from "../../../domain/repositories/AlbumRepository";
 import { TrackRepository } from "../../../domain/repositories/TrackRepository";
 
-export class RetireAlbumUseCase {
+export class DeleteAlbumUseCase {
   constructor(
     private readonly albumRepository: AlbumRepository,
     private readonly trackRepository: TrackRepository,
@@ -18,24 +17,19 @@ export class RetireAlbumUseCase {
 
   public async execute(albumId: string, user: AuthenticatedUser): Promise<Album> {
     const album = await this.albumRepository.findById(albumId);
-    if (!album || album.visibilityReason === CatalogVisibilityReason.ArtistDeleted) {
+    if (!album) {
       throw new AppError(404, "AlbumNotFound", "El album no existe o ya no esta disponible.");
     }
 
-    this.authorizationService.assertAdminRole(user);
+    this.authorizationService.assertArtistOwnership(user, album.artistId);
 
-    if (
-      album.status === CatalogStatus.Retirado &&
-      album.visibilityReason === CatalogVisibilityReason.AdminRetired
-    ) {
-      await this.trackRepository.retireByAlbum(albumId, CatalogVisibilityReason.AdminRetired);
+    if (album.visibilityReason === CatalogVisibilityReason.ArtistDeleted) {
       return album;
     }
 
-    const retiredAlbum = await this.albumRepository.retire(albumId, CatalogVisibilityReason.AdminRetired);
-    await this.trackRepository.retireByAlbum(albumId, CatalogVisibilityReason.AdminRetired);
-    await this.catalogEventRecorder?.recordAlbumSnapshot(retiredAlbum);
-
-    return retiredAlbum;
+    const deletedAlbum = await this.albumRepository.markDeleted(albumId);
+    await this.trackRepository.markDeletedByAlbum(albumId);
+    await this.catalogEventRecorder?.recordAlbumSnapshot(deletedAlbum);
+    return deletedAlbum;
   }
 }

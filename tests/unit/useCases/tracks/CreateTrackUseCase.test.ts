@@ -16,7 +16,11 @@ describe("CreateTrackUseCase", () => {
       findById: jest.fn(),
       update: jest.fn(),
       retire: jest.fn(),
-      detachAlbum: jest.fn(),
+      reinstate: jest.fn(),
+      retireByAlbum: jest.fn(),
+      reinstateByAlbum: jest.fn(),
+      markDeleted: jest.fn(),
+      markDeletedByAlbum: jest.fn(),
       searchPublishedByTitle: jest.fn(),
       listByArtist: jest.fn(),
       countAllForAdmin: jest.fn(),
@@ -39,6 +43,8 @@ describe("CreateTrackUseCase", () => {
       findById: jest.fn(),
       update: jest.fn(),
       retire: jest.fn(),
+      reinstate: jest.fn(),
+      markDeleted: jest.fn(),
       countAllForAdmin: jest.fn(),
       listAllForAdmin: jest.fn(),
       searchPublishedByTitle: jest.fn(),
@@ -74,6 +80,7 @@ describe("CreateTrackUseCase", () => {
       coverAssetId: "688f6a27-a86a-4f8c-af24-2ec6a13eafca",
       durationSeconds: null,
       status: CatalogStatus.Publicado,
+      visibilityReason: null,
       createdAt: new Date(),
       updatedAt: new Date()
     });
@@ -128,6 +135,7 @@ describe("CreateTrackUseCase", () => {
       coverAssetId: "688f6a27-a86a-4f8c-af24-2ec6a13eafca",
       durationSeconds: 180,
       status: CatalogStatus.Publicado,
+      visibilityReason: null,
       createdAt: new Date(),
       updatedAt: new Date()
     });

@@ -3,11 +3,10 @@ import { AppError } from "../../errors/AppError";
 import { AuthorizationService } from "../../services/AuthorizationService";
 import { CatalogEventRecorder } from "../../services/CatalogEventRecorder";
 import { Track } from "../../../domain/entities/Track";
-import { CatalogStatus } from "../../../domain/enums/CatalogStatus";
 import { CatalogVisibilityReason } from "../../../domain/enums/CatalogVisibilityReason";
 import { TrackRepository } from "../../../domain/repositories/TrackRepository";
 
-export class RetireTrackUseCase {
+export class DeleteTrackUseCase {
   constructor(
     private readonly trackRepository: TrackRepository,
     private readonly authorizationService: AuthorizationService,
@@ -16,21 +15,18 @@ export class RetireTrackUseCase {
 
   public async execute(trackId: string, user: AuthenticatedUser): Promise<Track> {
     const track = await this.trackRepository.findById(trackId);
-    if (!track || track.visibilityReason === CatalogVisibilityReason.ArtistDeleted) {
+    if (!track) {
       throw new AppError(404, "TrackNotFound", "La pista no existe o ya no esta disponible.");
     }
 
-    this.authorizationService.assertAdminRole(user);
+    this.authorizationService.assertArtistOwnership(user, track.artistId);
 
-    if (
-      track.status === CatalogStatus.Retirado &&
-      track.visibilityReason === CatalogVisibilityReason.AdminRetired
-    ) {
+    if (track.visibilityReason === CatalogVisibilityReason.ArtistDeleted) {
       return track;
     }
 
-    const retiredTrack = await this.trackRepository.retire(trackId, CatalogVisibilityReason.AdminRetired);
-    await this.catalogEventRecorder?.recordTrackSnapshot(retiredTrack);
-    return retiredTrack;
+    const deletedTrack = await this.trackRepository.markDeleted(trackId);
+    await this.catalogEventRecorder?.recordTrackSnapshot(deletedTrack);
+    return deletedTrack;
   }
 }

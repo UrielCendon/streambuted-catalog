@@ -17,13 +17,14 @@ export class ListAdminAlbumsUseCase {
   public async execute(
     user: AuthenticatedUser,
     includeRetired: boolean,
-    pagination: Pagination
+    pagination: Pagination,
+    searchTerm?: string
   ): Promise<AdminAlbumListResponse> {
     this.authorizationService.assertAdminRole(user);
 
     const [data, total] = await Promise.all([
-      this.albumRepository.listAllForAdmin(includeRetired, pagination),
-      this.albumRepository.countAllForAdmin(includeRetired)
+      this.albumRepository.listAllForAdmin(includeRetired, pagination, searchTerm),
+      this.albumRepository.countAllForAdmin(includeRetired, searchTerm)
     ]);
 
     return {

@@ -28,6 +28,8 @@ describe("SearchCatalogUseCase", () => {
       findById: jest.fn(),
       update: jest.fn(),
       retire: jest.fn(),
+      reinstate: jest.fn(),
+      markDeleted: jest.fn(),
       countAllForAdmin: jest.fn(),
       listAllForAdmin: jest.fn(),
       searchPublishedByTitle: jest.fn().mockResolvedValue([
@@ -49,7 +51,11 @@ describe("SearchCatalogUseCase", () => {
       findById: jest.fn(),
       update: jest.fn(),
       retire: jest.fn(),
-      detachAlbum: jest.fn(),
+      reinstate: jest.fn(),
+      retireByAlbum: jest.fn(),
+      reinstateByAlbum: jest.fn(),
+      markDeleted: jest.fn(),
+      markDeletedByAlbum: jest.fn(),
       searchPublishedByTitle: jest.fn().mockResolvedValue([
         {
           trackId: "8ec8d920-a0f4-467d-ad47-53ecf694cbf4",

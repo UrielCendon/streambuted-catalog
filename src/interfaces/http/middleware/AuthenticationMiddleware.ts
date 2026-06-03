@@ -25,10 +25,16 @@ const RESOURCE_CHANGED_MESSAGE =
   "El recurso original ha cambiado. Vuelve a iniciar sesion e intentalo de nuevo.";
 
 const JWKS_UNAVAILABLE_MESSAGE =
-  "El servicio de autenticacion no esta disponible temporalmente. Intentalo de nuevo mas tarde.";
+  "Esta funcion no esta disponible en este momento. Intenta de nuevo mas tarde.";
 
 const ACCOUNT_BANNED_MESSAGE =
   "La cuenta se encuentra suspendida.";
+
+const SESSION_EXPIRED_MESSAGE =
+  "Tu sesion expiro. Inicia sesion nuevamente.";
+
+const SESSION_INVALID_MESSAGE =
+  "No se pudo validar tu sesion. Inicia sesion nuevamente.";
 
 type ErrorLike = {
   name?: unknown;
@@ -230,7 +236,7 @@ const createIdentityAccountStatusClient = (identityBaseUrl: string): IdentityAcc
       }
 
       if (response.status === 401) {
-        throw new AppError(401, "Unauthorized", "El token JWT es invalido o expiro.");
+        throw new AppError(401, "Unauthorized", SESSION_EXPIRED_MESSAGE);
       }
 
       throw new AppError(503, "ServiceUnavailable", JWKS_UNAVAILABLE_MESSAGE);
@@ -302,7 +308,7 @@ export const createAuthenticationMiddleware =
     return (request: Request, _response: ExpressResponse, next: NextFunction): void => {
       const token = getBearerToken(request.headers.authorization);
       if (!token) {
-        next(new AppError(401, "Unauthorized", "Falta el encabezado Authorization o no es valido."));
+        next(new AppError(401, "Unauthorized", SESSION_EXPIRED_MESSAGE));
         return;
       }
 
@@ -328,18 +334,18 @@ export const createAuthenticationMiddleware =
               return;
             }
 
-            next(new AppError(401, "Unauthorized", "El token JWT es invalido o expiro."));
+            next(new AppError(401, "Unauthorized", SESSION_EXPIRED_MESSAGE));
             return;
           }
 
           if (!isCatalogJwtPayload(decoded)) {
-            next(new AppError(401, "Unauthorized", "El contenido del token JWT no es valido."));
+            next(new AppError(401, "Unauthorized", SESSION_INVALID_MESSAGE));
             return;
           }
 
           const normalizedRole = normalizeRole(decoded.role);
           if (!normalizedRole) {
-            next(new AppError(401, "Unauthorized", "El rol del token JWT no es valido."));
+            next(new AppError(401, "Unauthorized", SESSION_INVALID_MESSAGE));
             return;
           }
 

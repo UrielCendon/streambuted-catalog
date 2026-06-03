@@ -8,7 +8,7 @@ import { CatalogVisibilityReason } from "../../../domain/enums/CatalogVisibility
 import { AlbumRepository } from "../../../domain/repositories/AlbumRepository";
 import { TrackRepository } from "../../../domain/repositories/TrackRepository";
 
-export class RetireAlbumUseCase {
+export class ReinstateAlbumUseCase {
   constructor(
     private readonly albumRepository: AlbumRepository,
     private readonly trackRepository: TrackRepository,
@@ -24,18 +24,18 @@ export class RetireAlbumUseCase {
 
     this.authorizationService.assertAdminRole(user);
 
-    if (
-      album.status === CatalogStatus.Retirado &&
-      album.visibilityReason === CatalogVisibilityReason.AdminRetired
-    ) {
-      await this.trackRepository.retireByAlbum(albumId, CatalogVisibilityReason.AdminRetired);
+    if (album.status === CatalogStatus.Publicado) {
+      await this.trackRepository.reinstateByAlbum(albumId);
       return album;
     }
 
-    const retiredAlbum = await this.albumRepository.retire(albumId, CatalogVisibilityReason.AdminRetired);
-    await this.trackRepository.retireByAlbum(albumId, CatalogVisibilityReason.AdminRetired);
-    await this.catalogEventRecorder?.recordAlbumSnapshot(retiredAlbum);
+    if (album.visibilityReason !== CatalogVisibilityReason.AdminRetired) {
+      throw new AppError(409, "AlbumStateConflict", "El album ya no esta disponible para esta accion.");
+    }
 
-    return retiredAlbum;
+    const reinstatedAlbum = await this.albumRepository.reinstate(albumId);
+    await this.trackRepository.reinstateByAlbum(albumId);
+    await this.catalogEventRecorder?.recordAlbumSnapshot(reinstatedAlbum);
+    return reinstatedAlbum;
   }
 }

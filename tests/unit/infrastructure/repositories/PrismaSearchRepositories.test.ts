@@ -5,8 +5,18 @@ import { PrismaTrackRepository } from "../../../../src/infrastructure/repositori
 
 function createPrismaMock() {
   return {
-    $queryRaw: jest.fn().mockResolvedValue([])
-  } as unknown as PrismaClient & { $queryRaw: jest.Mock };
+    $queryRaw: jest.fn().mockResolvedValue([]),
+    album: {
+      findMany: jest.fn().mockResolvedValue([])
+    },
+    track: {
+      groupBy: jest.fn().mockResolvedValue([])
+    }
+  } as unknown as PrismaClient & {
+    $queryRaw: jest.Mock;
+    album: { findMany: jest.Mock };
+    track: { groupBy: jest.Mock };
+  };
 }
 
 function getSqlText(query: unknown): string {
@@ -40,6 +50,34 @@ describe("Prisma search repositories", () => {
     const sql = getSqlText(prisma.$queryRaw.mock.calls[0][0]);
     expect(sql).toContain("status =");
     expect(sql).toContain("unaccent(lower(title))");
+  });
+
+  it("counts only published album tracks in admin moderation results", async () => {
+    const prisma = createPrismaMock();
+    prisma.album.findMany.mockResolvedValue([
+      {
+        albumId: "album-1",
+        artistId: "artist-1",
+        title: "Album",
+        coverAssetId: "cover-1",
+        status: "PUBLICADO",
+        visibilityReason: null,
+        createdAt: new Date("2026-01-01T00:00:00.000Z"),
+        updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+        artist: { displayName: "Ada" }
+      }
+    ]);
+    prisma.track.groupBy.mockResolvedValue([
+      {
+        albumId: "album-1",
+        _count: { _all: 1 }
+      }
+    ]);
+    const repository = new PrismaAlbumRepository(prisma);
+
+    const albums = await repository.listAllForAdmin(true, { limit: 10, offset: 0 });
+
+    expect(albums[0].trackCount).toBe(1);
   });
 
   it("searches published tracks by title and genre with accent-insensitive SQL", async () => {
