@@ -27,4 +27,4 @@ COPY --from=builder /app/contracts ./contracts
 EXPOSE 8082 9092
 
 USER appuser
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
+CMD ["node", "dist/main.js"]

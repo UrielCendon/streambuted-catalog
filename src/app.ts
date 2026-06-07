@@ -37,6 +37,11 @@ import { PrismaTrackRepository } from "./infrastructure/repositories/PrismaTrack
 import { CatalogController } from "./interfaces/http/controllers/CatalogController";
 import { createAuthenticationMiddleware } from "./interfaces/http/middleware/AuthenticationMiddleware";
 import { errorHandlerMiddleware, notFoundMiddleware } from "./interfaces/http/middleware/ErrorHandlerMiddleware";
+import {
+  catalogOpenApiDocument,
+  renderSwaggerUiHtml,
+  renderSwaggerUiInitializer
+} from "./interfaces/http/openapi/CatalogOpenApi";
 import { buildCatalogRouter } from "./interfaces/http/routes/CatalogRoutes";
 import { createCatalogPlaybackGrpcServer } from "./interfaces/grpc/CatalogPlaybackGrpcServer";
 
@@ -198,15 +203,16 @@ export const createApplication = (): ApplicationContext => {
   });
 
   const app = express();
-  app.use(helmet());
+  app.use(helmet({ contentSecurityPolicy: false }));
   app.use(
     helmet.contentSecurityPolicy({
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", ...allowedOrigins],
+        scriptSrc: ["'self'", "https://unpkg.com", ...allowedOrigins],
         connectSrc: ["'self'", ...allowedOrigins],
         imgSrc: ["'self'", 'data:' ],
         styleSrc: ["'self'", 'https:'],
+        fontSrc: ["'self'", "https://unpkg.com", "data:"],
         objectSrc: ["'none'"],
         frameAncestors: ["'none'"]
       }
@@ -226,6 +232,29 @@ export const createApplication = (): ApplicationContext => {
   app.get("/api/v1/health", (_request, response) => {
     response.status(200).json({ status: "ok" });
   });
+
+  const registerCatalogDocs = (basePath: string): void => {
+    app.get(`${basePath}/openapi.json`, (_request, response) => {
+      response.status(200).json(catalogOpenApiDocument);
+    });
+
+    app.get(`${basePath}/docs`, (_request, response) => {
+      response
+        .status(200)
+        .type("html")
+        .send(renderSwaggerUiHtml("StreamButed Catalog Service", `${basePath}/docs/swagger-ui.js`));
+    });
+
+    app.get(`${basePath}/docs/swagger-ui.js`, (_request, response) => {
+      response
+        .status(200)
+        .type("application/javascript")
+        .send(renderSwaggerUiInitializer(`${basePath}/openapi.json`));
+    });
+  };
+
+  registerCatalogDocs("/catalog");
+  registerCatalogDocs("/api/v1/catalog");
 
   const authenticationMiddleware = createAuthenticationMiddleware({
     jwksUrl,
